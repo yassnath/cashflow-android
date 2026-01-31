@@ -1,0 +1,68 @@
+package com.solvix.tabungan
+
+import io.github.jan.supabase.createSupabaseClient
+import io.github.jan.supabase.postgrest.Postgrest
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+
+object SupabaseClient {
+  val client = createSupabaseClient(
+    supabaseUrl = "https://idxosoeqtsncwyjwsxeb.supabase.co",
+    supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlkeG9zb2VxdHNuY3d5andzeGViIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk4MjQzNDYsImV4cCI6MjA4NTQwMDM0Nn0.qbsigizJL5nQpXSNd2M16GwHyPQoXp4eQMf2tGF3lVY",
+  ) {
+    install(Postgrest)
+  }
+}
+
+@Serializable
+data class SupabaseUser(
+  val id: String = "",
+  val name: String = "",
+  val email: String = "",
+  @SerialName("phone")
+  val phone: String = "",
+  val country: String = "",
+  @SerialName("created_at")
+  val createdAt: String = "",
+  val username: String = "",
+  val password: String = "",
+)
+
+@Serializable
+data class SupabaseMoneyEntry(
+  val id: String = "",
+  @SerialName("user_id")
+  val userId: String = "",
+  val type: String = "",
+  val amount: Int = 0,
+  val date: String = "",
+  val category: String = "",
+  val note: String = "",
+  @SerialName("source_method")
+  val sourceOrMethod: String = "",
+  @SerialName("channel_bank")
+  val channelOrBank: String = "",
+)
+
+@Serializable
+data class SupabaseSavingEntry(
+  val id: String = "",
+  @SerialName("user_id")
+  val userId: String = "",
+  val amount: Int = 0,
+  val date: String = "",
+  val goal: String = "",
+  val note: String = "",
+)
+
+@Serializable
+data class SupabaseDreamEntry(
+  val id: String = "",
+  @SerialName("user_id")
+  val userId: String = "",
+  val title: String = "",
+  val target: Int = 0,
+  val current: Int = 0,
+  val deadline: String = "",
+  val note: String = "",
+)
