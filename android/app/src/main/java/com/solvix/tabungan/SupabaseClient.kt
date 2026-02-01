@@ -22,8 +22,8 @@ data class SupabaseUser(
   @SerialName("phone")
   val phone: String = "",
   val country: String = "",
-  val bio: String = "",
-  val birthdate: String = "",
+  val bio: String? = null,
+  val birthdate: String? = null,
   @SerialName("created_at")
   val createdAt: String = "",
   val username: String = "",

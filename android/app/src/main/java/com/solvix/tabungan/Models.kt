@@ -3,6 +3,7 @@ package com.solvix.tabungan
 import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.Calendar
+import java.util.Date
 import java.util.Locale
 import java.util.UUID
 
@@ -100,6 +101,16 @@ fun parseDate(text: String): Long? {
   } catch (ex: Exception) {
     null
   }
+}
+
+fun toDbDate(text: String): String {
+  val millis = parseDate(text) ?: return text
+  return SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date(millis))
+}
+
+fun toUiDate(text: String): String {
+  val millis = parseDate(text) ?: return text
+  return SimpleDateFormat("dd-MM-yyyy", Locale.US).format(Date(millis))
 }
 
 enum class SummaryRange(val label: String) {

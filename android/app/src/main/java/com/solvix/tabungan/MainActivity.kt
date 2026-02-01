@@ -42,6 +42,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
@@ -65,11 +66,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.core.content.ContextCompat
 import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricPrompt
 import androidx.fragment.app.FragmentActivity
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import io.github.jan.supabase.postgrest.from
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -126,9 +130,24 @@ fun TabunganApp() {
   var confirmAction by remember { mutableStateOf<(() -> Unit)?>(null) }
   var showAlert by remember { mutableStateOf(false) }
   var alertMessage by remember { mutableStateOf("") }
-  val context = LocalContext.current
-  val prefs = remember { context.getSharedPreferences("tabungan_prefs", Context.MODE_PRIVATE) }
-  var toastVisible by remember { mutableStateOf(false) }
+    val context = LocalContext.current
+    val prefs = remember { context.getSharedPreferences("tabungan_prefs", Context.MODE_PRIVATE) }
+    val lifecycleOwner = LocalLifecycleOwner.current
+    var fadeSeed by remember { mutableStateOf(0) }
+    var pageFadeSeed by remember { mutableStateOf(0) }
+    DisposableEffect(lifecycleOwner) {
+      val observer = LifecycleEventObserver { _, event ->
+        if (event == Lifecycle.Event.ON_START) {
+          fadeSeed += 1
+        }
+      }
+      lifecycleOwner.lifecycle.addObserver(observer)
+      onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+    LaunchedEffect(currentPage) {
+      pageFadeSeed += 1
+    }
+    var toastVisible by remember { mutableStateOf(false) }
   var toastMessage by remember { mutableStateOf("") }
   val defaultLang = prefs.getString("app_language", "EN") ?: "EN"
   var currentLang by rememberSaveable {
@@ -186,8 +205,8 @@ fun TabunganApp() {
       email = user.email,
       phone = user.phone,
       country = user.country,
-      birthdate = user.birthdate,
-      bio = user.bio,
+      birthdate = toUiDate(user.birthdate ?: ""),
+      bio = user.bio.orEmpty(),
       username = user.username,
       password = user.password,
     )
@@ -224,8 +243,8 @@ fun TabunganApp() {
           put("email", user.email)
           put("phone", user.phone)
           put("country", user.country)
-          put("bio", user.bio)
-          put("birthdate", user.birthdate)
+          put("bio", user.bio ?: "")
+          put("birthdate", toDbDate(user.birthdate ?: ""))
           put("created_at", user.createdAt)
           put("username", user.username)
           put("password", user.password)
@@ -243,7 +262,7 @@ fun TabunganApp() {
           put("phone", user.phone)
           put("country", user.country)
           put("bio", user.bio)
-          put("birthdate", user.birthdate)
+          put("birthdate", toDbDate(user.birthdate))
           put("username", user.username)
           put("password", user.password)
         },
@@ -722,18 +741,20 @@ fun TabunganApp() {
                 val incomeTotal = filtered.filter { it.type == EntryType.Income }.sumOf { it.amount }
                 val expenseTotal = filtered.filter { it.type == EntryType.Expense }.sumOf { it.amount }
                 item {
-                  HeroSummary(
-                    range = summaryRange,
-                    onRangeChange = { summaryRange = it },
-                    incomeTotal = incomeTotal,
-                    expenseTotal = expenseTotal,
-                    strings = strings,
-                  )
+                  FadeInPage(key = "${currentPage}_${fadeSeed}_${pageFadeSeed}") {
+                    HeroSummary(
+                      range = summaryRange,
+                      onRangeChange = { summaryRange = it },
+                      incomeTotal = incomeTotal,
+                      expenseTotal = expenseTotal,
+                      strings = strings,
+                    )
+                  }
                 }
               }
 
               item {
-                FadeInPage(key = currentPage) {
+                FadeInPage(key = "${currentPage}_${fadeSeed}_${pageFadeSeed}") {
                   when (currentPage) {
                     Page.Income -> IncomePage(
                       entries = incomeEntries,
@@ -852,10 +873,20 @@ fun TabunganApp() {
                       onSave = { updated ->
                         currentUser = updated
                         if (updated.id.isNotBlank()) {
-                          scope.launch(Dispatchers.IO) { updateUserProfile(updated) }
+                          scope.launch {
+                            try {
+                              withContext(Dispatchers.IO) { updateUserProfile(updated) }
+                              toastMessage = strings["save_profile"]
+                              toastVisible = true
+                            } catch (ex: Exception) {
+                              toastMessage = strings["save_profile_failed"]
+                              toastVisible = true
+                            }
+                          }
+                        } else {
+                          toastMessage = strings["save_profile_failed"]
+                          toastVisible = true
                         }
-                        toastMessage = strings["save_profile"]
-                        toastVisible = true
                       },
                       onLogout = {
                         isLoggedIn = false

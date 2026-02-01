@@ -790,14 +790,15 @@ fun ProfilePage(
         AppTextField(strings["label_bio"], value = bio, onValueChange = { bio = it }, minLines = 2)
         AppTextField(strings["label_username"], value = username, onValueChange = { username = it })
         AppTextField(strings["password_new"], value = password, onValueChange = { password = it }, isPassword = true)
-        GradientButton(text = strings["save_profile"]) {
-          onSave(
-            UserProfile(
-              name = name,
-              email = email,
-              phone = phone,
-              country = country,
-              birthdate = birthdate,
+          GradientButton(text = strings["save_profile"]) {
+            onSave(
+              UserProfile(
+                id = user?.id.orEmpty(),
+                name = name,
+                email = email,
+                phone = phone,
+                country = country,
+                birthdate = birthdate,
               bio = bio,
               username = username,
               password = password,

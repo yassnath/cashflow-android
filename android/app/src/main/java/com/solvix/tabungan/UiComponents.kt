@@ -61,6 +61,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.window.PopupProperties
+import kotlinx.coroutines.delay
 
 object AppDimens {
   val radiusLg = 24.dp
@@ -352,7 +353,7 @@ fun AppDropdown(
           Box(
             modifier = Modifier
               .fillMaxWidth()
-              .height(32.dp)
+              .height(34.dp)
               .clip(itemShape)
               .background(itemBackground)
               .clickable {
@@ -512,15 +513,21 @@ fun ToastMessage(text: String, visible: Boolean, modifier: Modifier = Modifier) 
 
 @Composable
 fun FadeInPage(key: Any?, content: @Composable () -> Unit) {
-  var visible by remember(key) { mutableStateOf(false) }
-  LaunchedEffect(key) { visible = true }
-  AnimatedVisibility(
-    visible = visible,
-    enter = fadeIn(animationSpec = tween(durationMillis = 220)),
-  ) {
-    content()
+    var targetAlpha by remember(key) { mutableStateOf(0f) }
+    LaunchedEffect(key) {
+      targetAlpha = 0f
+      delay(10)
+      targetAlpha = 1f
+    }
+    val alpha by animateFloatAsState(
+      targetValue = targetAlpha,
+      animationSpec = tween(durationMillis = 360),
+      label = "page-fade",
+    )
+    Box(modifier = Modifier.alpha(alpha)) {
+      content()
+    }
   }
-}
 
 @Composable
 fun IconCircle(emoji: String, size: Dp = 28.dp) {
