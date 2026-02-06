@@ -258,9 +258,16 @@ fun IncomePage(
           onSelected = { channel = it },
         )
         AppTextField(strings["label_note"], value = note, onValueChange = { note = it }, placeholder = strings["placeholder_note"], minLines = 2)
+        val isFormValid = parseAmount(amount) > 0 &&
+          date.isNotBlank() &&
+          category.isNotBlank() &&
+          source.isNotBlank() &&
+          channel.isNotBlank()
         GradientButton(
           text = if (editingId == null) strings["save_income"] else strings["update_income"],
+          enabled = isFormValid,
           onClick = {
+            if (!isFormValid) return@GradientButton
             val timeFallback = editingTime ?: nowJakartaTime()
             val normalizedDate = ensureDateHasTime(date, timeFallback)
             val createdAt = editingCreatedAt ?: nowJakartaText()
@@ -360,9 +367,16 @@ fun ExpensePage(
           onSelected = { bank = it },
         )
         AppTextField(strings["label_note"], value = note, onValueChange = { note = it }, placeholder = strings["placeholder_note"], minLines = 2)
+        val isFormValid = parseAmount(amount) > 0 &&
+          date.isNotBlank() &&
+          category.isNotBlank() &&
+          method.isNotBlank() &&
+          bank.isNotBlank()
         GradientButton(
           text = if (editingId == null) strings["save_expense"] else strings["update_expense"],
+          enabled = isFormValid,
           onClick = {
+            if (!isFormValid) return@GradientButton
             val timeFallback = editingTime ?: nowJakartaTime()
             val normalizedDate = ensureDateHasTime(date, timeFallback)
             val createdAt = editingCreatedAt ?: nowJakartaText()
@@ -430,12 +444,14 @@ fun DreamsPage(
         AppTextField(strings["label_target_amount"], value = target, onValueChange = { target = it }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
         DateField(strings["label_deadline"], value = deadline, onValueChange = { deadline = it }, placeholder = strings["placeholder_date"])
         AppTextField(strings["label_note"], value = note, onValueChange = { note = it }, placeholder = strings["placeholder_strategy"], minLines = 2)
+        val trimmedTitle = title.trim()
+        val targetAmount = parseAmount(target)
+        val isFormValid = trimmedTitle.isNotBlank() && targetAmount > 0 && deadline.isNotBlank()
         GradientButton(
           text = if (editingId == null) strings["save_dream"] else strings["update_dream"],
+          enabled = isFormValid,
           onClick = {
-            val trimmedTitle = title.trim()
-            val targetAmount = parseAmount(target)
-            if (trimmedTitle.isBlank() || targetAmount <= 0 || deadline.isBlank()) {
+            if (!isFormValid) {
               onInvalid()
               return@GradientButton
             }

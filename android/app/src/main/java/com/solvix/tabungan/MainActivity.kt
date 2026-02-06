@@ -658,8 +658,6 @@ fun TabunganApp() {
   }
 
   fun canUseFace(): Boolean {
-    val hasFace = context.packageManager.hasSystemFeature(PackageManager.FEATURE_FACE)
-    if (!hasFace) return false
     val strong = biometricManager.canAuthenticate(BiometricManager.Authenticators.BIOMETRIC_STRONG)
     val weak = biometricManager.canAuthenticate(BiometricManager.Authenticators.BIOMETRIC_WEAK)
     val biometricOk = strong == BiometricManager.BIOMETRIC_SUCCESS || weak == BiometricManager.BIOMETRIC_SUCCESS

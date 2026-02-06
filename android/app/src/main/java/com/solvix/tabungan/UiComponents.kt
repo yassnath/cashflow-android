@@ -126,19 +126,26 @@ fun MiniCard(
 fun GradientButton(
   text: String,
   modifier: Modifier = Modifier,
+  enabled: Boolean = true,
   onClick: () -> Unit,
 ) {
   val colors = LocalAppColors.current
+  val background = if (enabled) {
+    Brush.linearGradient(listOf(colors.accent, colors.accent2))
+  } else {
+    Brush.linearGradient(listOf(colors.muted, colors.muted))
+  }
   Box(
     modifier = modifier
       .fillMaxWidth()
       .heightIn(min = 44.dp)
       .clip(RoundedCornerShape(14.dp))
-      .background(Brush.linearGradient(listOf(colors.accent, colors.accent2)))
-      .clickable(onClick = onClick),
+      .background(background)
+      .clickable(enabled = enabled, onClick = onClick),
     contentAlignment = Alignment.Center,
   ) {
-    Text(text = text, color = Color.White, fontWeight = FontWeight.Bold)
+    val textColor = if (enabled) Color.White else colors.text.copy(alpha = 0.6f)
+    Text(text = text, color = textColor, fontWeight = FontWeight.Bold)
   }
 }
 
