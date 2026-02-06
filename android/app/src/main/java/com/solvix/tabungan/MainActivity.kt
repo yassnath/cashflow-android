@@ -124,10 +124,7 @@ fun TabunganApp() {
   var loadingTarget by rememberSaveable { mutableStateOf(LoadingTarget.Startup) }
   var showAuth by rememberSaveable { mutableStateOf(false) }
   var authTab by rememberSaveable { mutableStateOf(AuthTab.SignIn) }
-  var showAdmin by rememberSaveable { mutableStateOf(false) }
   var adminLoggedIn by rememberSaveable { mutableStateOf(false) }
-  var adminUsername by rememberSaveable { mutableStateOf("") }
-  var adminPassword by rememberSaveable { mutableStateOf("") }
   val adminUsers = remember { mutableStateListOf<SupabaseUser>() }
   var showConfirm by remember { mutableStateOf(false) }
   var confirmMessage by remember { mutableStateOf("") }
@@ -393,6 +390,33 @@ fun TabunganApp() {
     }
   }
 
+  fun clearUserData() {
+    currentUser = null
+    isLoggedIn = false
+    pendingEdit = null
+    incomeEntries.clear()
+    expenseEntries.clear()
+    savingEntries.clear()
+    dreamEntries.clear()
+  }
+
+  fun enterAdminMode() {
+    clearUserData()
+    adminLoggedIn = true
+    adminUsers.clear()
+    showAuth = false
+    showSplash = false
+    showProfileMenu = false
+  }
+
+  fun exitAdminMode() {
+    adminLoggedIn = false
+    adminUsers.clear()
+    showProfileMenu = false
+    showAuth = true
+    authTab = AuthTab.SignIn
+  }
+
   fun signInWithCredentials(username: String, password: String) {
     if (username.isBlank() || password.isBlank()) {
       alertMessage = strings["signin_missing"]
@@ -400,11 +424,7 @@ fun TabunganApp() {
       return
     }
     if (username.trim() == "admin" && password == "adminsolvixstudio") {
-      showAuth = false
-      showAdmin = true
-      adminLoggedIn = true
-      adminUsername = "admin"
-      adminPassword = ""
+      enterAdminMode()
       scope.launch(Dispatchers.IO) {
         val users = fetchAllUsers()
         withContext(Dispatchers.Main) {
@@ -651,8 +671,8 @@ fun TabunganApp() {
     ) {
       val colors = LocalAppColors.current
       val modalOpen = showLoading || showSplash || showAuth || showConfirm || showAlert
-      val displayName = currentUser?.name ?: strings["guest"]
-      val displayUsername = currentUser?.username ?: strings["guest"]
+      val displayName = if (adminLoggedIn) strings["menu_admin"] else (currentUser?.name ?: strings["guest"])
+      val displayUsername = if (adminLoggedIn) "admin" else (currentUser?.username ?: strings["guest"])
       val loadingAlpha by animateFloatAsState(
         targetValue = if (showLoading && !loadingFadeOut) 1f else 0f,
         animationSpec = tween(700),
@@ -712,22 +732,24 @@ fun TabunganApp() {
         Scaffold(
           containerColor = Color.Transparent,
           bottomBar = {
-            val navBlur = showSplash || showAuth
-            Box {
-              BottomNav(
-                current = currentPage,
-                onSelect = { page -> navigateTo(page) },
-                strings = strings,
-                theme = currentTheme,
-                modifier = Modifier.then(if (navBlur) Modifier.blur(24.dp) else Modifier),
-              )
-              if (navBlur) {
-                Box(
-                  modifier = Modifier
-                    .matchParentSize()
-                    .background(Color(0xCCFFFFFF))
-                    .clickable(enabled = true, onClick = {}),
+            if (!adminLoggedIn) {
+              val navBlur = showSplash || showAuth
+              Box {
+                BottomNav(
+                  current = currentPage,
+                  onSelect = { page -> navigateTo(page) },
+                  strings = strings,
+                  theme = currentTheme,
+                  modifier = Modifier.then(if (navBlur) Modifier.blur(24.dp) else Modifier),
                 )
+                if (navBlur) {
+                  Box(
+                    modifier = Modifier
+                      .matchParentSize()
+                      .background(Color(0xCCFFFFFF))
+                      .clickable(enabled = true, onClick = {}),
+                  )
+                }
               }
             }
           },
@@ -761,57 +783,78 @@ fun TabunganApp() {
                     showMenu = showProfileMenu,
                     onDismissMenu = { showProfileMenu = false },
                     onNavigate = { page ->
-                      navigateTo(page)
+                      if (!adminLoggedIn) {
+                        navigateTo(page)
+                      }
                       showProfileMenu = false
                     },
-                    onAdmin = { showAdmin = true },
                     onLogout = {
                       showProfileMenu = false
                       requestConfirm(strings["logout_confirm"]) {
-                        isLoggedIn = false
-                        currentUser = null
-                        biometricAllowed = false
-                        prefs.edit().putBoolean("biometric_allowed", false).apply()
-                        showSplash = false
-                        showAuth = false
-                        loadingTarget = LoadingTarget.Logout
-                        showLoading = true
-                        clearAuthFields(
-                          onSignInUsername = { signInUsername = it },
-                          onSignInPassword = { signInPassword = it },
-                          onSignUpName = { signUpName = it },
-                          onSignUpEmail = { signUpEmail = it },
-                          onSignUpCountry = { signUpCountry = it },
-                          onSignUpBirthdate = { signUpBirthdate = it },
-                          onSignUpBio = { signUpBio = it },
-                          onSignUpUsername = { signUpUsername = it },
-                          onSignUpPassword = { signUpPassword = it },
-                        )
-                        toastMessage = strings["logout_success"]
-                        toastVisible = true
+                        if (adminLoggedIn) {
+                          exitAdminMode()
+                          clearAuthFields(
+                            onSignInUsername = { signInUsername = it },
+                            onSignInPassword = { signInPassword = it },
+                            onSignUpName = { signUpName = it },
+                            onSignUpEmail = { signUpEmail = it },
+                            onSignUpCountry = { signUpCountry = it },
+                            onSignUpBirthdate = { signUpBirthdate = it },
+                            onSignUpBio = { signUpBio = it },
+                            onSignUpUsername = { signUpUsername = it },
+                            onSignUpPassword = { signUpPassword = it },
+                          )
+                          toastMessage = strings["logout_success"]
+                          toastVisible = true
+                        } else {
+                          clearUserData()
+                          biometricAllowed = false
+                          prefs.edit().putBoolean("biometric_allowed", false).apply()
+                          showSplash = false
+                          showAuth = false
+                          loadingTarget = LoadingTarget.Logout
+                          showLoading = true
+                          clearAuthFields(
+                            onSignInUsername = { signInUsername = it },
+                            onSignInPassword = { signInPassword = it },
+                            onSignUpName = { signUpName = it },
+                            onSignUpEmail = { signUpEmail = it },
+                            onSignUpCountry = { signUpCountry = it },
+                            onSignUpBirthdate = { signUpBirthdate = it },
+                            onSignUpBio = { signUpBio = it },
+                            onSignUpUsername = { signUpUsername = it },
+                            onSignUpPassword = { signUpPassword = it },
+                          )
+                          toastMessage = strings["logout_success"]
+                          toastVisible = true
+                        }
                       }
                     },
                     displayName = displayName,
                     displayUsername = displayUsername,
                     strings = strings,
                     theme = currentTheme,
+                    isAdmin = adminLoggedIn,
                   )
 
-                  if (currentPage.showHero()) {
-                    val filtered = filterByRange(incomeEntries + expenseEntries, summaryRange)
-                    val incomeTotal = filtered.filter { it.type == EntryType.Income }.sumOf { it.amount }
-                    val expenseTotal = filtered.filter { it.type == EntryType.Expense }.sumOf { it.amount }
-                    HeroSummary(
-                      range = summaryRange,
-                      onRangeChange = { summaryRange = it },
-                      incomeTotal = incomeTotal,
-                      expenseTotal = expenseTotal,
-                      strings = strings,
-                    )
-                  }
+                  if (adminLoggedIn) {
+                    AdminDashboard(users = adminUsers, strings = strings)
+                  } else {
+                    if (currentPage.showHero()) {
+                      val filtered = filterByRange(incomeEntries + expenseEntries, summaryRange)
+                      val incomeTotal = filtered.filter { it.type == EntryType.Income }.sumOf { it.amount }
+                      val expenseTotal = filtered.filter { it.type == EntryType.Expense }.sumOf { it.amount }
+                      HeroSummary(
+                        range = summaryRange,
+                        onRangeChange = { summaryRange = it },
+                        incomeTotal = incomeTotal,
+                        expenseTotal = expenseTotal,
+                        strings = strings,
+                      )
+                    }
 
-                  when (currentPage) {
-                    Page.Income -> IncomePage(
+                    when (currentPage) {
+                      Page.Income -> IncomePage(
                         entries = incomeEntries,
                         onSave = { entry ->
                           incomeEntries.add(entry)
@@ -840,7 +883,7 @@ fun TabunganApp() {
                         onEditConsumed = { pendingEdit = null },
                         strings = strings,
                       )
-                    Page.Expense -> ExpensePage(
+                      Page.Expense -> ExpensePage(
                         entries = expenseEntries,
                         onSave = { entry ->
                           expenseEntries.add(entry)
@@ -869,187 +912,187 @@ fun TabunganApp() {
                         onEditConsumed = { pendingEdit = null },
                         strings = strings,
                       )
-                    Page.Dreams -> DreamsPage(
-                      entries = dreamEntries,
-                      onSave = { entry ->
-                        dreamEntries.add(entry)
-                        if (activeUserId.isNotBlank()) {
-                          scope.launch(Dispatchers.IO) { insertDreamEntry(activeUserId, entry) }
-                        }
-                        toastMessage = strings["dream_added"]
-                        toastVisible = true
-                      },
-                      onUpdate = { entry ->
-                        val index = dreamEntries.indexOfFirst { it.id == entry.id }
-                        if (index >= 0) dreamEntries[index] = entry
-                        if (activeUserId.isNotBlank()) {
-                          scope.launch(Dispatchers.IO) { updateDreamEntry(entry) }
-                        }
-                      },
-                      onDelete = { entry ->
-                        requestConfirm(strings["confirm_delete_dream"]) {
-                          dreamEntries.removeAll { it.id == entry.id }
+                      Page.Dreams -> DreamsPage(
+                        entries = dreamEntries,
+                        onSave = { entry ->
+                          dreamEntries.add(entry)
                           if (activeUserId.isNotBlank()) {
-                            scope.launch(Dispatchers.IO) { deleteDreamEntry(entry.id) }
+                            scope.launch(Dispatchers.IO) { insertDreamEntry(activeUserId, entry) }
                           }
-                        }
-                      },
-                      strings = strings,
-                    )
-                    Page.History -> HistoryPage(
-                      entries = incomeEntries + expenseEntries,
-                      strings = strings,
-                      onEdit = { entry ->
-                        pendingEdit = entry
-                        navigateTo(if (entry.type == EntryType.Income) Page.Income else Page.Expense)
-                      },
-                      onDelete = { entry ->
-                        val confirmKey = if (entry.type == EntryType.Income) "confirm_delete_income" else "confirm_delete_expense"
-                        requestConfirm(strings[confirmKey]) {
-                          when (entry.type) {
-                            EntryType.Income -> incomeEntries.removeAll { it.id == entry.id }
-                            EntryType.Expense -> expenseEntries.removeAll { it.id == entry.id }
-                          }
+                          toastMessage = strings["dream_added"]
+                          toastVisible = true
+                        },
+                        onUpdate = { entry ->
+                          val index = dreamEntries.indexOfFirst { it.id == entry.id }
+                          if (index >= 0) dreamEntries[index] = entry
                           if (activeUserId.isNotBlank()) {
-                            scope.launch(Dispatchers.IO) { deleteMoneyEntry(entry.id) }
+                            scope.launch(Dispatchers.IO) { updateDreamEntry(entry) }
                           }
-                        }
-                      },
-                    )
-                    Page.Saving -> SavingPage(
-                      entries = savingEntries,
-                      onSave = { entry ->
-                        savingEntries.add(entry)
-                        if (activeUserId.isNotBlank()) {
-                          scope.launch(Dispatchers.IO) { insertSavingEntry(activeUserId, entry) }
-                        }
-                      },
-                      onUpdate = { entry ->
-                        val index = savingEntries.indexOfFirst { it.id == entry.id }
-                        if (index >= 0) savingEntries[index] = entry
-                        if (activeUserId.isNotBlank()) {
-                          scope.launch(Dispatchers.IO) { updateSavingEntry(entry) }
-                        }
-                      },
-                      onDelete = { entry ->
-                        requestConfirm(strings["confirm_delete_saving"]) {
-                          savingEntries.removeAll { it.id == entry.id }
-                          if (activeUserId.isNotBlank()) {
-                            scope.launch(Dispatchers.IO) { deleteSavingEntry(entry.id) }
-                          }
-                        }
-                      },
-                      strings = strings,
-                    )
-                    Page.Calculator -> CalculatorPage()
-                    Page.Report -> ReportPage(
-                      incomeEntries,
-                      expenseEntries,
-                      strings = strings,
-                      language = currentLang,
-                      startYear = resolveStartYear(),
-                    ) {
-                      toastMessage = it
-                      toastVisible = true
-                    }
-                    Page.Profile -> ProfilePage(
-                      user = currentUser,
-                      strings = strings,
-                      onSave = { updated ->
-                        currentUser = updated
-                        if (updated.id.isNotBlank()) {
-                          scope.launch {
-                            try {
-                              withContext(Dispatchers.IO) { updateUserProfile(updated) }
-                              toastMessage = strings["save_profile"]
-                              toastVisible = true
-                            } catch (ex: Exception) {
-                              toastMessage = strings["save_profile_failed"]
-                              toastVisible = true
+                        },
+                        onDelete = { entry ->
+                          requestConfirm(strings["confirm_delete_dream"]) {
+                            dreamEntries.removeAll { it.id == entry.id }
+                            if (activeUserId.isNotBlank()) {
+                              scope.launch(Dispatchers.IO) { deleteDreamEntry(entry.id) }
                             }
                           }
-                        } else {
-                          toastMessage = strings["save_profile_failed"]
-                          toastVisible = true
-                        }
-                      },
-                      onLogout = {
-                        isLoggedIn = false
-                        currentUser = null
-                        biometricAllowed = false
-                        prefs.edit().putBoolean("biometric_allowed", false).apply()
-                        showSplash = false
-                        showAuth = false
-                        loadingTarget = LoadingTarget.Logout
-                        showLoading = true
-                        clearAuthFields(
-                          onSignInUsername = { signInUsername = it },
-                          onSignInPassword = { signInPassword = it },
-                          onSignUpName = { signUpName = it },
-                          onSignUpEmail = { signUpEmail = it },
-                          onSignUpCountry = { signUpCountry = it },
-                          onSignUpBirthdate = { signUpBirthdate = it },
-                          onSignUpBio = { signUpBio = it },
-                          onSignUpUsername = { signUpUsername = it },
-                          onSignUpPassword = { signUpPassword = it },
-                        )
-                        toastMessage = strings["logout_success"]
+                        },
+                        strings = strings,
+                      )
+                      Page.History -> HistoryPage(
+                        entries = incomeEntries + expenseEntries,
+                        strings = strings,
+                        onEdit = { entry ->
+                          pendingEdit = entry
+                          navigateTo(if (entry.type == EntryType.Income) Page.Income else Page.Expense)
+                        },
+                        onDelete = { entry ->
+                          val confirmKey = if (entry.type == EntryType.Income) "confirm_delete_income" else "confirm_delete_expense"
+                          requestConfirm(strings[confirmKey]) {
+                            when (entry.type) {
+                              EntryType.Income -> incomeEntries.removeAll { it.id == entry.id }
+                              EntryType.Expense -> expenseEntries.removeAll { it.id == entry.id }
+                            }
+                            if (activeUserId.isNotBlank()) {
+                              scope.launch(Dispatchers.IO) { deleteMoneyEntry(entry.id) }
+                            }
+                          }
+                        },
+                      )
+                      Page.Saving -> SavingPage(
+                        entries = savingEntries,
+                        onSave = { entry ->
+                          savingEntries.add(entry)
+                          if (activeUserId.isNotBlank()) {
+                            scope.launch(Dispatchers.IO) { insertSavingEntry(activeUserId, entry) }
+                          }
+                        },
+                        onUpdate = { entry ->
+                          val index = savingEntries.indexOfFirst { it.id == entry.id }
+                          if (index >= 0) savingEntries[index] = entry
+                          if (activeUserId.isNotBlank()) {
+                            scope.launch(Dispatchers.IO) { updateSavingEntry(entry) }
+                          }
+                        },
+                        onDelete = { entry ->
+                          requestConfirm(strings["confirm_delete_saving"]) {
+                            savingEntries.removeAll { it.id == entry.id }
+                            if (activeUserId.isNotBlank()) {
+                              scope.launch(Dispatchers.IO) { deleteSavingEntry(entry.id) }
+                            }
+                          }
+                        },
+                        strings = strings,
+                      )
+                      Page.Calculator -> CalculatorPage()
+                      Page.Report -> ReportPage(
+                        incomeEntries,
+                        expenseEntries,
+                        strings = strings,
+                        language = currentLang,
+                        startYear = resolveStartYear(),
+                      ) {
+                        toastMessage = it
                         toastVisible = true
-                      },
-                    )
-                    Page.Settings -> SettingsPage(
-                      fingerprintEnabled = fingerprintEnabled,
-                      onFingerprintToggle = { enabled ->
-                        if (enabled) {
-                          if (canUseFingerprint()) {
-                            fingerprintEnabled = true
-                            prefs.edit().putBoolean("fingerprint_enabled", true).apply()
-                            alertMessage = strings["fingerprint_enabled"]
-                            showAlert = true
+                      }
+                      Page.Profile -> ProfilePage(
+                        user = currentUser,
+                        strings = strings,
+                        onSave = { updated ->
+                          currentUser = updated
+                          if (updated.id.isNotBlank()) {
+                            scope.launch {
+                              try {
+                                withContext(Dispatchers.IO) { updateUserProfile(updated) }
+                                toastMessage = strings["save_profile"]
+                                toastVisible = true
+                              } catch (ex: Exception) {
+                                toastMessage = strings["save_profile_failed"]
+                                toastVisible = true
+                              }
+                            }
+                          } else {
+                            toastMessage = strings["save_profile_failed"]
+                            toastVisible = true
+                          }
+                        },
+                        onLogout = {
+                          clearUserData()
+                          biometricAllowed = false
+                          prefs.edit().putBoolean("biometric_allowed", false).apply()
+                          showSplash = false
+                          showAuth = false
+                          loadingTarget = LoadingTarget.Logout
+                          showLoading = true
+                          clearAuthFields(
+                            onSignInUsername = { signInUsername = it },
+                            onSignInPassword = { signInPassword = it },
+                            onSignUpName = { signUpName = it },
+                            onSignUpEmail = { signUpEmail = it },
+                            onSignUpCountry = { signUpCountry = it },
+                            onSignUpBirthdate = { signUpBirthdate = it },
+                            onSignUpBio = { signUpBio = it },
+                            onSignUpUsername = { signUpUsername = it },
+                            onSignUpPassword = { signUpPassword = it },
+                          )
+                          toastMessage = strings["logout_success"]
+                          toastVisible = true
+                        },
+                      )
+                      Page.Settings -> SettingsPage(
+                        fingerprintEnabled = fingerprintEnabled,
+                        onFingerprintToggle = { enabled ->
+                          if (enabled) {
+                            if (canUseFingerprint()) {
+                              fingerprintEnabled = true
+                              prefs.edit().putBoolean("fingerprint_enabled", true).apply()
+                              alertMessage = strings["fingerprint_enabled"]
+                              showAlert = true
+                            } else {
+                              fingerprintEnabled = false
+                              prefs.edit().putBoolean("fingerprint_enabled", false).apply()
+                              alertMessage = strings["fingerprint_required"]
+                              showAlert = true
+                            }
                           } else {
                             fingerprintEnabled = false
                             prefs.edit().putBoolean("fingerprint_enabled", false).apply()
-                            alertMessage = strings["fingerprint_required"]
-                            showAlert = true
                           }
-                        } else {
-                          fingerprintEnabled = false
-                          prefs.edit().putBoolean("fingerprint_enabled", false).apply()
-                        }
-                      },
-                      faceUnlockEnabled = faceUnlockEnabled,
-                      onFaceUnlockToggle = { enabled ->
-                        if (enabled) {
-                          if (canUseBiometric()) {
-                            faceUnlockEnabled = true
-                            prefs.edit().putBoolean("face_unlock_enabled", true).apply()
-                            alertMessage = strings["face_enabled"]
-                            showAlert = true
+                        },
+                        faceUnlockEnabled = faceUnlockEnabled,
+                        onFaceUnlockToggle = { enabled ->
+                          if (enabled) {
+                            if (canUseBiometric()) {
+                              faceUnlockEnabled = true
+                              prefs.edit().putBoolean("face_unlock_enabled", true).apply()
+                              alertMessage = strings["face_enabled"]
+                              showAlert = true
+                            } else {
+                              faceUnlockEnabled = false
+                              prefs.edit().putBoolean("face_unlock_enabled", false).apply()
+                              alertMessage = strings["face_required"]
+                              showAlert = true
+                            }
                           } else {
                             faceUnlockEnabled = false
                             prefs.edit().putBoolean("face_unlock_enabled", false).apply()
-                            alertMessage = strings["face_required"]
-                            showAlert = true
                           }
-                        } else {
-                          faceUnlockEnabled = false
-                          prefs.edit().putBoolean("face_unlock_enabled", false).apply()
+                        },
+                        language = currentLang,
+                        onLanguageChange = {
+                          currentLang = it
+                          prefs.edit().putString("app_language", if (it == AppLanguage.ID) "ID" else "EN").apply()
+                        },
+                        strings = strings,
+                        onToast = {
+                          toastMessage = it
+                          toastVisible = true
+                        },
+                      )
+                      Page.Themes -> ThemesPage(currentTheme) { selected ->
+                        requestConfirm("${strings["confirm_theme_change"]} ${themeLabel(selected, strings)}?") {
+                          currentTheme = selected
                         }
-                      },
-                      language = currentLang,
-                      onLanguageChange = {
-                        currentLang = it
-                        prefs.edit().putString("app_language", if (it == AppLanguage.ID) "ID" else "EN").apply()
-                      },
-                      strings = strings,
-                      onToast = {
-                        toastMessage = it
-                        toastVisible = true
-                      },
-                    )
-                    Page.Themes -> ThemesPage(currentTheme) { selected ->
-                      requestConfirm("${strings["confirm_theme_change"]} ${themeLabel(selected, strings)}?") {
-                        currentTheme = selected
                       }
                     }
                   }
@@ -1269,78 +1312,6 @@ fun TabunganApp() {
           }
         }
 
-        if (showAdmin) {
-          ModalOverlay {
-            ModalCard(
-              modifier = Modifier
-                .fillMaxWidth(0.92f)
-                .heightIn(max = 520.dp),
-            ) {
-              Column(
-                modifier = Modifier
-                  .fillMaxWidth()
-                  .verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-              ) {
-                Text(text = strings["admin_title"], fontWeight = FontWeight.Bold, fontSize = 18.sp)
-                if (!adminLoggedIn) {
-                  AppTextField(strings["admin_username"], value = adminUsername, onValueChange = { adminUsername = it })
-                  AppTextField(
-                    strings["admin_password"],
-                    value = adminPassword,
-                    onValueChange = { adminPassword = it },
-                    isPassword = true,
-                  )
-                  GradientButton(text = strings["admin_login"]) {
-                    if (adminUsername == "admin" && adminPassword == "adminsolvixstudio") {
-                      adminLoggedIn = true
-                      scope.launch(Dispatchers.IO) {
-                        val users = fetchAllUsers()
-                        withContext(Dispatchers.Main) {
-                          adminUsers.clear()
-                          adminUsers.addAll(users)
-                        }
-                      }
-                    } else {
-                      alertMessage = strings["admin_login_failed"]
-                      showAlert = true
-                    }
-                  }
-                } else {
-                  Text(text = strings["admin_users_title"], color = colors.muted, fontSize = 12.sp)
-                  if (adminUsers.isEmpty()) {
-                    Text(text = strings["admin_no_users"], color = colors.muted, fontSize = 12.sp)
-                  } else {
-                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                      adminUsers.forEach { user ->
-                        Column(
-                          modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(colors.bg2)
-                            .border(1.dp, colors.cardBorder, RoundedCornerShape(12.dp))
-                            .padding(12.dp),
-                        ) {
-                          Text(text = user.name, fontWeight = FontWeight.Bold)
-                          Text(text = user.email, color = colors.muted, fontSize = 12.sp)
-                          Text(text = user.country, color = colors.muted, fontSize = 12.sp)
-                          Text(text = formatCreatedAt(user.createdAt), color = colors.muted, fontSize = 12.sp)
-                        }
-                      }
-                    }
-                  }
-                  GhostButton(text = strings["admin_logout"]) {
-                    adminLoggedIn = false
-                    adminPassword = ""
-                    adminUsers.clear()
-                  }
-                }
-                GhostButton(text = strings["close"]) { showAdmin = false }
-              }
-            }
-          }
-        }
-
         if (showLoading) {
         AnimatedVisibility(
           visible = showLoading,
@@ -1428,12 +1399,12 @@ private fun TopBar(
   showMenu: Boolean,
   onDismissMenu: () -> Unit,
   onNavigate: (Page) -> Unit,
-  onAdmin: () -> Unit,
   onLogout: () -> Unit,
   displayName: String,
   displayUsername: String,
   strings: AppStrings,
   theme: ThemeName,
+  isAdmin: Boolean,
 ) {
   val colors = LocalAppColors.current
   var menuAnchorBounds by remember { mutableStateOf(IntRect.Zero) }
@@ -1507,12 +1478,16 @@ private fun TopBar(
               Text(text = "x", fontWeight = FontWeight.Bold, color = colors.text)
             }
           }
-          MenuItem(text = strings["menu_theme"], emoji = themePageIcon(theme, Page.Themes)) { onNavigate(Page.Themes) }
-          MenuItem(text = strings["menu_calculator"], emoji = themePageIcon(theme, Page.Calculator)) { onNavigate(Page.Calculator) }
-          MenuItem(text = strings["menu_report"], emoji = themePageIcon(theme, Page.Report)) { onNavigate(Page.Report) }
-          MenuItem(text = strings["menu_profile"], emoji = themePageIcon(theme, Page.Profile)) { onNavigate(Page.Profile) }
-          MenuItem(text = strings["menu_settings"], emoji = themePageIcon(theme, Page.Settings)) { onNavigate(Page.Settings) }
-          MenuItem(text = strings["menu_logout"], emoji = "🚪", color = colors.danger) { onLogout() }
+          if (isAdmin) {
+            MenuItem(text = strings["admin_logout"], emoji = "🚪", color = colors.danger) { onLogout() }
+          } else {
+            MenuItem(text = strings["menu_theme"], emoji = themePageIcon(theme, Page.Themes)) { onNavigate(Page.Themes) }
+            MenuItem(text = strings["menu_calculator"], emoji = themePageIcon(theme, Page.Calculator)) { onNavigate(Page.Calculator) }
+            MenuItem(text = strings["menu_report"], emoji = themePageIcon(theme, Page.Report)) { onNavigate(Page.Report) }
+            MenuItem(text = strings["menu_profile"], emoji = themePageIcon(theme, Page.Profile)) { onNavigate(Page.Profile) }
+            MenuItem(text = strings["menu_settings"], emoji = themePageIcon(theme, Page.Settings)) { onNavigate(Page.Settings) }
+            MenuItem(text = strings["menu_logout"], emoji = "🚪", color = colors.danger) { onLogout() }
+          }
         }
       }
     }

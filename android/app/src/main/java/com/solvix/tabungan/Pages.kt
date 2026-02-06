@@ -2,6 +2,7 @@ package com.solvix.tabungan
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -10,11 +11,14 @@ import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -40,10 +44,12 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.platform.LocalContext
@@ -60,6 +66,7 @@ import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
 import java.util.Date
+import kotlin.math.roundToInt
 
 @Composable
 fun HeroSummary(
@@ -560,6 +567,115 @@ private fun RowScope.CalculatorKey(label: String, onPress: () -> Unit, isWide: B
     contentAlignment = Alignment.Center,
   ) {
     Text(text = label, fontSize = 18.sp, fontWeight = FontWeight.SemiBold, color = textColor)
+  }
+}
+
+@Composable
+fun AdminDashboard(
+  users: List<SupabaseUser>,
+  strings: AppStrings,
+) {
+  val colors = LocalAppColors.current
+  val totalUsers = users.size
+  val palette = listOf(
+    colors.accent,
+    colors.accent2,
+    colors.danger,
+    Color(0xFF4DABF7),
+    Color(0xFFFFC857),
+    Color(0xFF9D4EDD),
+    Color(0xFF00B4D8),
+  )
+  val recencyPalette = listOf(
+    colors.accent2,
+    Color(0xFF4DABF7),
+    colors.accent,
+    Color(0xFFFFC857),
+    colors.danger,
+  )
+  val countrySlices = buildCountrySlices(users, strings, palette)
+  val recencySlices = buildRecencySlices(users, strings, recencyPalette)
+  val topCountry = countrySlices.maxByOrNull { it.value }?.label ?: "-"
+  val latestSignup = users.maxByOrNull { parseCreatedAtMillis(it.createdAt) ?: 0L }
+    ?.let { formatCreatedAt(it.createdAt) }
+    ?: "-"
+
+  Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    SectionTitle(
+      icon = "🛡️",
+      title = strings["admin_dashboard_title"],
+      subtitle = strings["admin_dashboard_subtitle"],
+    )
+    AppCard {
+      Text(text = strings["admin_overview"], fontWeight = FontWeight.Bold, fontSize = 16.sp, color = colors.text)
+      Spacer(modifier = Modifier.height(10.dp))
+      Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        MiniStat(label = strings["admin_total_users"], value = totalUsers.toString())
+        MiniStat(label = strings["admin_top_country"], value = topCountry)
+        MiniStat(label = strings["admin_latest_signup"], value = latestSignup)
+      }
+    }
+    AppCard {
+      Text(text = strings["admin_chart_country"], fontWeight = FontWeight.Bold, fontSize = 15.sp, color = colors.text)
+      Spacer(modifier = Modifier.height(12.dp))
+      if (countrySlices.isEmpty()) {
+        Text(text = strings["admin_no_users"], color = colors.muted, fontSize = 12.sp)
+      } else {
+        DonutChart(
+          slices = countrySlices,
+          centerLabel = totalUsers.toString(),
+          centerSubLabel = strings["admin_total_users"],
+          modifier = Modifier
+            .size(200.dp)
+            .align(Alignment.CenterHorizontally),
+        )
+        Spacer(modifier = Modifier.height(12.dp))
+        DonutLegend(slices = countrySlices)
+      }
+    }
+    AppCard {
+      Text(text = strings["admin_chart_recency"], fontWeight = FontWeight.Bold, fontSize = 15.sp, color = colors.text)
+      Spacer(modifier = Modifier.height(12.dp))
+      if (recencySlices.isEmpty()) {
+        Text(text = strings["admin_no_users"], color = colors.muted, fontSize = 12.sp)
+      } else {
+        DonutChart(
+          slices = recencySlices,
+          centerLabel = totalUsers.toString(),
+          centerSubLabel = strings["admin_total_users"],
+          modifier = Modifier
+            .size(200.dp)
+            .align(Alignment.CenterHorizontally),
+        )
+        Spacer(modifier = Modifier.height(12.dp))
+        DonutLegend(slices = recencySlices)
+      }
+    }
+    AppCard {
+      Text(text = strings["admin_users_title"], fontWeight = FontWeight.Bold, fontSize = 15.sp, color = colors.text)
+      Spacer(modifier = Modifier.height(8.dp))
+      if (users.isEmpty()) {
+        Text(text = strings["admin_no_users"], color = colors.muted, fontSize = 12.sp)
+      } else {
+        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+          users.forEach { user ->
+            Column(
+              modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(12.dp))
+                .background(colors.bg2)
+                .border(1.dp, colors.cardBorder, RoundedCornerShape(12.dp))
+                .padding(12.dp),
+            ) {
+              Text(text = user.name, fontWeight = FontWeight.Bold)
+              Text(text = user.email, color = colors.muted, fontSize = 12.sp)
+              Text(text = user.country, color = colors.muted, fontSize = 12.sp)
+              Text(text = formatCreatedAt(user.createdAt), color = colors.muted, fontSize = 12.sp)
+            }
+          }
+        }
+      }
+    }
   }
 }
 
@@ -1200,6 +1316,12 @@ private data class ChartSeries(
   val expense: List<Int>,
 )
 
+private data class DonutSlice(
+  val label: String,
+  val value: Int,
+  val color: Color,
+)
+
 private fun buildMonthlySeries(income: List<MoneyEntry>, expense: List<MoneyEntry>, language: AppLanguage): ChartSeries {
   val now = Calendar.getInstance()
   val currentYear = now.get(Calendar.YEAR)
@@ -1258,6 +1380,72 @@ private fun buildYearlySeries(income: List<MoneyEntry>, expense: List<MoneyEntry
 
 private fun totalsFromSeries(series: ChartSeries): Pair<Int, Int> {
   return Pair(series.income.sum(), series.expense.sum())
+}
+
+private fun buildCountrySlices(
+  users: List<SupabaseUser>,
+  strings: AppStrings,
+  palette: List<Color>,
+  limit: Int = 5,
+): List<DonutSlice> {
+  if (users.isEmpty()) return emptyList()
+  val counts = users
+    .map { it.country.trim().ifBlank { strings["admin_unknown_country"] } }
+    .groupingBy { it }
+    .eachCount()
+  val sorted = counts.entries.sortedByDescending { it.value }
+  val top = sorted.take(limit).map { it.key to it.value }.toMutableList()
+  val otherCount = sorted.drop(limit).sumOf { it.value }
+  if (otherCount > 0) {
+    top.add(strings["admin_other"] to otherCount)
+  }
+  return top
+    .filter { it.second > 0 }
+    .mapIndexed { index, (label, value) ->
+      DonutSlice(label = label, value = value, color = palette[index % palette.size])
+    }
+}
+
+private fun buildRecencySlices(
+  users: List<SupabaseUser>,
+  strings: AppStrings,
+  palette: List<Color>,
+): List<DonutSlice> {
+  if (users.isEmpty()) return emptyList()
+  val now = System.currentTimeMillis()
+  var last7 = 0
+  var last30 = 0
+  var last90 = 0
+  var older = 0
+  var unknown = 0
+  users.forEach { user ->
+    val millis = parseCreatedAtMillis(user.createdAt)
+    if (millis == null) {
+      unknown += 1
+    } else {
+      val days = ((now - millis) / 86_400_000L).coerceAtLeast(0L)
+      when {
+        days <= 7 -> last7 += 1
+        days <= 30 -> last30 += 1
+        days <= 90 -> last90 += 1
+        else -> older += 1
+      }
+    }
+  }
+  val buckets = mutableListOf(
+    strings["admin_recency_7d"] to last7,
+    strings["admin_recency_30d"] to last30,
+    strings["admin_recency_90d"] to last90,
+    strings["admin_recency_older"] to older,
+  )
+  if (unknown > 0) {
+    buckets.add(strings["admin_recency_unknown"] to unknown)
+  }
+  return buckets
+    .filter { it.second > 0 }
+    .mapIndexed { index, (label, value) ->
+      DonutSlice(label = label, value = value, color = palette[index % palette.size])
+    }
 }
 
 @Composable
@@ -1326,6 +1514,79 @@ private fun LineChart(series: ChartSeries) {
     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
       series.labels.forEach { label ->
         Text(text = label, color = colors.muted, fontSize = 11.sp)
+      }
+    }
+  }
+}
+
+@Composable
+private fun DonutChart(
+  slices: List<DonutSlice>,
+  modifier: Modifier = Modifier,
+  strokeWidth: Dp = 18.dp,
+  centerLabel: String? = null,
+  centerSubLabel: String? = null,
+) {
+  val colors = LocalAppColors.current
+  val total = slices.sumOf { it.value }
+  Box(modifier = modifier, contentAlignment = Alignment.Center) {
+    Canvas(modifier = Modifier.fillMaxSize()) {
+      val stroke = Stroke(width = strokeWidth.toPx(), cap = StrokeCap.Round)
+      drawArc(
+        color = colors.bg2,
+        startAngle = 0f,
+        sweepAngle = 360f,
+        useCenter = false,
+        style = stroke,
+      )
+      if (total > 0) {
+        var startAngle = -90f
+        val gap = 2f
+        slices.forEach { slice ->
+          val sweep = (slice.value.toFloat() / total) * 360f
+          val adjustedSweep = (sweep - gap).coerceAtLeast(0f)
+          drawArc(
+            color = slice.color,
+            startAngle = startAngle,
+            sweepAngle = adjustedSweep,
+            useCenter = false,
+            style = stroke,
+          )
+          startAngle += sweep
+        }
+      }
+    }
+    if (centerLabel != null) {
+      Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(text = centerLabel, fontWeight = FontWeight.Bold, fontSize = 18.sp, color = colors.text)
+        if (centerSubLabel != null) {
+          Text(text = centerSubLabel, fontSize = 11.sp, color = colors.muted)
+        }
+      }
+    }
+  }
+}
+
+@Composable
+private fun DonutLegend(slices: List<DonutSlice>) {
+  val colors = LocalAppColors.current
+  val total = slices.sumOf { it.value }.coerceAtLeast(1)
+  Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    slices.forEach { slice ->
+      val percent = (slice.value.toFloat() / total) * 100f
+      Row(verticalAlignment = Alignment.CenterVertically) {
+        Box(
+          modifier = Modifier
+            .size(10.dp)
+            .clip(CircleShape)
+            .background(slice.color),
+        )
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(
+          text = "${slice.label} • ${slice.value} (${percent.roundToInt()}%)",
+          color = colors.text,
+          fontSize = 12.sp,
+        )
       }
     }
   }
