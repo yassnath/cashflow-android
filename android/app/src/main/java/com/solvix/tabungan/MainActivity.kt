@@ -1515,8 +1515,8 @@ private fun BottomNav(
   Row(
     modifier = modifier
       .fillMaxWidth()
-      .shadow(20.dp, RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp))
       .background(colors.card, RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp))
+      .shadow(20.dp, RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp))
       .padding(horizontal = 10.dp, vertical = 14.dp),
     horizontalArrangement = Arrangement.SpaceBetween,
   ) {

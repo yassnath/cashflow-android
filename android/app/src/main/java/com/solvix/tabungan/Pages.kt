@@ -591,7 +591,6 @@ private fun RowScope.CalculatorKey(label: String, onPress: () -> Unit, isWide: B
       .height(48.dp)
       .clip(RoundedCornerShape(14.dp))
       .then(backgroundModifier)
-      .shadow(0.dp, RoundedCornerShape(14.dp))
       .clickable { onPress() }
       .padding(vertical = 12.dp),
     contentAlignment = Alignment.Center,

@@ -55,6 +55,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.platform.LocalDensity
@@ -92,10 +93,11 @@ fun AppCard(
   content: @Composable ColumnScope.() -> Unit,
 ) {
   val colors = LocalAppColors.current
+  val shadowColor = Color.Black.copy(alpha = 0.18f)
   CompositionLocalProvider(LocalContentColor provides colors.text) {
     Column(
       modifier = modifier
-        .shadow(AppDimens.shadow, shape)
+        .shadow(AppDimens.shadow, shape, ambientColor = shadowColor, spotColor = shadowColor)
         .border(1.dp, colors.cardBorder, shape)
         .background(colors.card, shape)
         .padding(AppDimens.cardPadding),
@@ -110,10 +112,11 @@ fun MiniCard(
   content: @Composable ColumnScope.() -> Unit,
 ) {
   val colors = LocalAppColors.current
+  val shadowColor = Color.Black.copy(alpha = 0.18f)
   CompositionLocalProvider(LocalContentColor provides colors.text) {
     Column(
       modifier = modifier
-        .shadow(10.dp, RoundedCornerShape(AppDimens.radiusMd))
+        .shadow(10.dp, RoundedCornerShape(AppDimens.radiusMd), ambientColor = shadowColor, spotColor = shadowColor)
         .border(1.dp, colors.cardBorder, RoundedCornerShape(AppDimens.radiusMd))
         .background(colors.card, RoundedCornerShape(AppDimens.radiusMd))
         .padding(12.dp),
@@ -185,13 +188,14 @@ fun ChipButton(
   onClick: () -> Unit,
 ) {
   val colors = LocalAppColors.current
+  val shadowColor = Color.Black.copy(alpha = 0.18f)
   val borderColor = colors.accent
   Box(
     modifier = modifier
       .clip(RoundedCornerShape(999.dp))
       .background(colors.card)
       .border(1.dp, borderColor, RoundedCornerShape(999.dp))
-      .shadow(10.dp, RoundedCornerShape(999.dp))
+      .shadow(10.dp, RoundedCornerShape(999.dp), ambientColor = shadowColor, spotColor = shadowColor)
       .clickable(onClick = onClick)
       .padding(horizontal = 14.dp, vertical = 10.dp),
     contentAlignment = Alignment.Center,
@@ -484,12 +488,13 @@ fun ThemeCard(
   onClick: () -> Unit,
 ) {
   val colors = LocalAppColors.current
+  val shadowColor = Color.Black.copy(alpha = 0.18f)
   val borderColor = if (active) colors.accent else colors.cardBorder
   val elevation by animateFloatAsState(if (active) 12f else 6f, label = "theme-elevation")
   Row(
     modifier = modifier
       .fillMaxWidth()
-      .shadow(elevation.dp, RoundedCornerShape(14.dp))
+      .shadow(elevation.dp, RoundedCornerShape(14.dp), ambientColor = shadowColor, spotColor = shadowColor)
       .border(1.dp, borderColor, RoundedCornerShape(14.dp))
       .background(background, RoundedCornerShape(14.dp))
       .clickable(onClick = onClick)
