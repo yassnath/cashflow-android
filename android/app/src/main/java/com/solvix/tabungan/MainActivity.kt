@@ -228,6 +228,8 @@ fun TabunganApp() {
   var savedUsername by rememberSaveable { mutableStateOf(securePrefs.getString("saved_username", "") ?: "") }
   var savedUserId by rememberSaveable { mutableStateOf(securePrefs.getString("saved_user_id", "") ?: "") }
   var savedAuthId by rememberSaveable { mutableStateOf(securePrefs.getString("saved_auth_id", "") ?: "") }
+  var savedAccessToken by rememberSaveable { mutableStateOf(securePrefs.getString("saved_access_token", "") ?: "") }
+  var savedRefreshToken by rememberSaveable { mutableStateOf(securePrefs.getString("saved_refresh_token", "") ?: "") }
   var failedSignInAttempts by rememberSaveable { mutableIntStateOf(prefs.getInt("signin_failed_attempts", 0)) }
   var signInLockedUntil by rememberSaveable { mutableLongStateOf(prefs.getLong("signin_locked_until", 0L)) }
   var biometricPrompted by rememberSaveable { mutableStateOf(false) }
@@ -552,15 +554,22 @@ fun TabunganApp() {
   }
 
   fun persistBiometricIdentity(user: UserProfile) {
+    val session = SupabaseClient.client.auth.currentSessionOrNull()
+    val accessToken = session?.accessToken.orEmpty()
+    val refreshToken = session?.refreshToken.orEmpty()
     savedUsername = user.username
     savedUserId = user.id
     savedAuthId = user.authId
+    savedAccessToken = accessToken
+    savedRefreshToken = refreshToken
     hasRegistered = true
     securePrefs.edit {
       putBoolean("has_registered", true)
       putString("saved_username", user.username)
       putString("saved_user_id", user.id)
       putString("saved_auth_id", user.authId)
+      putString("saved_access_token", accessToken)
+      putString("saved_refresh_token", refreshToken)
     }
   }
 
@@ -569,6 +578,8 @@ fun TabunganApp() {
     savedUsername = ""
     savedUserId = ""
     savedAuthId = ""
+    savedAccessToken = ""
+    savedRefreshToken = ""
     biometricAllowed = false
     prefs.edit { putBoolean("biometric_allowed", false) }
     securePrefs.edit {
@@ -576,6 +587,8 @@ fun TabunganApp() {
       putString("saved_username", "")
       putString("saved_user_id", "")
       putString("saved_auth_id", "")
+      putString("saved_access_token", "")
+      putString("saved_refresh_token", "")
     }
   }
 
@@ -928,7 +941,7 @@ fun TabunganApp() {
   }
 
   fun signInWithSavedBiometricIdentity() {
-    if (savedUserId.isBlank() || savedAuthId.isBlank()) {
+    if (savedUserId.isBlank() && savedUsername.isBlank() && savedAuthId.isBlank()) {
       alertMessage = strings["signin_biometric_missing"]
       showAlert = true
       return
@@ -936,17 +949,37 @@ fun TabunganApp() {
     scope.launch(Dispatchers.IO) {
       try {
         SupabaseClient.client.auth.awaitInitialization()
+        if (SupabaseClient.client.auth.currentSessionOrNull() == null && savedAccessToken.isNotBlank()) {
+          runCatching {
+            SupabaseClient.client.auth.importAuthToken(
+              accessToken = savedAccessToken,
+              refreshToken = savedRefreshToken,
+              retrieveUser = false,
+            )
+          }
+        }
+
         val activeAuthId = SupabaseClient.client.auth.currentSessionOrNull()?.user?.id
           ?: runCatching { SupabaseClient.client.auth.retrieveUserForCurrentSession().id }.getOrNull()
           ?: ""
-        val matchedUser = if (activeAuthId == savedAuthId) {
-          fetchUserByAuthId(savedAuthId)?.toUserProfile()
-        } else {
-          null
-        }
+
+        val matchedUser = sequenceOf(
+          runCatching {
+            if (activeAuthId.isNotBlank()) fetchUserByAuthId(activeAuthId) else null
+          }.getOrNull(),
+          runCatching {
+            if (savedAuthId.isNotBlank()) fetchUserByAuthId(savedAuthId) else null
+          }.getOrNull(),
+          runCatching {
+            if (savedUserId.isNotBlank()) fetchUserById(savedUserId) else null
+          }.getOrNull(),
+          runCatching {
+            if (savedUsername.isNotBlank()) fetchUserByUsername(savedUsername) else null
+          }.getOrNull(),
+        ).firstOrNull { it != null }?.toUserProfile()
+
         withContext(Dispatchers.Main) {
           if (matchedUser == null) {
-            clearBiometricIdentity()
             alertMessage = strings["signin_biometric_expired"]
             showAlert = true
           } else {
@@ -1075,9 +1108,20 @@ fun TabunganApp() {
     showConfirm = true
   }
 
-  fun canUseFingerprint(): Boolean {
+  fun supportedBiometricAuthenticators(): Int {
     val strong = biometricManager.canAuthenticate(BiometricManager.Authenticators.BIOMETRIC_STRONG)
-    return strong == BiometricManager.BIOMETRIC_SUCCESS && keyguardManager.isDeviceSecure
+    if (strong == BiometricManager.BIOMETRIC_SUCCESS) {
+      return BiometricManager.Authenticators.BIOMETRIC_STRONG
+    }
+    val weak = biometricManager.canAuthenticate(BiometricManager.Authenticators.BIOMETRIC_WEAK)
+    if (weak == BiometricManager.BIOMETRIC_SUCCESS) {
+      return BiometricManager.Authenticators.BIOMETRIC_WEAK
+    }
+    return 0
+  }
+
+  fun canUseFingerprint(): Boolean {
+    return supportedBiometricAuthenticators() != 0 && keyguardManager.isDeviceSecure
   }
 
   fun launchBiometricAuth(
@@ -1122,10 +1166,16 @@ fun TabunganApp() {
   }
 
   fun launchFingerprintAuth(onSuccess: () -> Unit) {
+    val authenticators = supportedBiometricAuthenticators()
+    if (authenticators == 0) {
+      alertMessage = strings["fingerprint_required"]
+      showAlert = true
+      return
+    }
     launchBiometricAuth(
       title = strings["fingerprint_prompt_title"],
       subtitle = strings["fingerprint_prompt_subtitle"],
-      allowedAuthenticators = BiometricManager.Authenticators.BIOMETRIC_STRONG,
+      allowedAuthenticators = authenticators,
       onSuccess = onSuccess,
     )
   }
