@@ -11,6 +11,7 @@ import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.edit
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
+import io.github.jan.supabase.gotrue.auth
 import io.github.jan.supabase.postgrest.from
 import java.time.LocalDate
 import java.time.ZoneId
@@ -25,20 +26,26 @@ class GoalDeadlineWorker(
 
   override suspend fun doWork(): Result {
     val prefs = applicationContext.getSharedPreferences("tabungan_prefs", Context.MODE_PRIVATE)
-    val username = prefs.getString("saved_username", "") ?: ""
-    val password = prefs.getString("saved_password", "") ?: ""
-    if (username.isBlank() || password.isBlank()) return Result.success()
+    val securePrefs = SecurePrefs.open(applicationContext)
+    val userId = securePrefs.getString("saved_user_id", "") ?: ""
+    val authId = securePrefs.getString("saved_auth_id", "") ?: ""
+    if (userId.isBlank() || authId.isBlank()) return Result.success()
     if (!canPostNotifications()) return Result.success()
 
     val language = if (prefs.getString("app_language", "EN") == "ID") AppLanguage.ID else AppLanguage.EN
     val strings = stringsFor(language)
 
     return try {
-      val user = fetchUserByCredentials(username, password) ?: return Result.success()
+      SupabaseClient.client.auth.awaitInitialization()
+      val activeAuthId = SupabaseClient.client.auth.currentSessionOrNull()?.user?.id
+        ?: runCatching { SupabaseClient.client.auth.retrieveUserForCurrentSession().id }.getOrNull()
+        ?: ""
+      if (activeAuthId != authId) return Result.success()
+
       val moneyRows = SupabaseClient.client
         .from("money_entries")
         .select {
-          filter { eq("user_id", user.id) }
+          filter { eq("user_id", userId) }
         }
         .decodeList<SupabaseMoneyEntry>()
       val incomeTotal = moneyRows
@@ -48,7 +55,7 @@ class GoalDeadlineWorker(
       val goals = SupabaseClient.client
         .from("dream_entries")
         .select {
-          filter { eq("user_id", user.id) }
+          filter { eq("user_id", userId) }
         }
         .decodeList<SupabaseDreamEntry>()
 
@@ -63,7 +70,7 @@ class GoalDeadlineWorker(
         val daysLeft = ChronoUnit.DAYS.between(today, deadline)
         if (daysLeft !in notifyDays) return@forEach
 
-        val markerKey = "goal_deadline_notified_${user.id}_${goal.id}_$daysLeft"
+        val markerKey = "goal_deadline_notified_${userId}_${goal.id}_$daysLeft"
         val todayKey = today.toString()
         if (prefs.getString(markerKey, "") == todayKey) return@forEach
 
@@ -93,20 +100,6 @@ class GoalDeadlineWorker(
     } catch (ex: Exception) {
       Result.retry()
     }
-  }
-
-  private suspend fun fetchUserByCredentials(username: String, password: String): SupabaseUser? {
-    val response = SupabaseClient.client
-      .from("users")
-      .select {
-        filter {
-          eq("username", username)
-          eq("password", password)
-        }
-        limit(1)
-      }
-      .decodeList<SupabaseUser>()
-    return response.firstOrNull()
   }
 
   private fun parseDeadlineLocalDate(text: String): LocalDate? {

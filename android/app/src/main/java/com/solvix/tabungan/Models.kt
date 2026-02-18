@@ -37,6 +37,7 @@ data class DreamEntry(
 
 data class UserProfile(
   val id: String = "",
+  val authId: String = "",
   val name: String,
   val email: String,
   val country: String,

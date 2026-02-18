@@ -55,6 +55,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import android.content.Context
@@ -595,6 +596,7 @@ fun CalculatorPage() {
             .fillMaxWidth()
             .clip(RoundedCornerShape(AppDimens.radiusSm))
             .background(colors.bg2)
+            .testTag("calculator_display")
             .padding(12.dp),
           contentAlignment = Alignment.CenterEnd,
         ) {
@@ -1110,7 +1112,6 @@ fun ProfilePage(
   var birthdate by rememberSaveable { mutableStateOf(user?.birthdate.orEmpty()) }
   var bio by rememberSaveable { mutableStateOf(user?.bio.orEmpty()) }
   var username by rememberSaveable { mutableStateOf(user?.username.orEmpty()) }
-  var password by rememberSaveable { mutableStateOf(user?.password.orEmpty()) }
 
   LaunchedEffect(user) {
     name = user?.name.orEmpty()
@@ -1119,7 +1120,6 @@ fun ProfilePage(
     birthdate = user?.birthdate.orEmpty()
     bio = user?.bio.orEmpty()
     username = user?.username.orEmpty()
-    password = user?.password.orEmpty()
   }
 
   Column {
@@ -1156,11 +1156,11 @@ fun ProfilePage(
         )
         AppTextField(strings["label_bio"], value = bio, onValueChange = { bio = it }, minLines = 2)
         AppTextField(strings["label_username"], value = username, onValueChange = { username = it })
-        AppTextField(strings["password_new"], value = password, onValueChange = { password = it }, isPassword = true)
           GradientButton(text = strings["save_profile"]) {
             onSave(
               UserProfile(
                 id = user?.id.orEmpty(),
+                authId = user?.authId.orEmpty(),
                 name = name,
                 email = email,
                 country = country,
@@ -1168,7 +1168,7 @@ fun ProfilePage(
                 bio = bio,
                 createdAt = user?.createdAt.orEmpty(),
                 username = username,
-                password = password,
+                password = "",
             ),
           )
         }
@@ -1195,9 +1195,12 @@ fun SettingsPage(
   language: AppLanguage,
   onLanguageChange: (AppLanguage) -> Unit,
   strings: AppStrings,
-  onToast: (String) -> Unit,
+  onChangePassword: (currentPassword: String, newPassword: String, confirmPassword: String) -> Unit,
+  canDeleteAccount: Boolean,
+  onDeleteAccount: () -> Unit,
 ) {
   val colors = LocalAppColors.current
+  val deleteButtonRed = Color(0xFFD32F2F)
   var langIndex by rememberSaveable { mutableIntStateOf(0) }
   var currentPassword by rememberSaveable { mutableStateOf("") }
   var newPassword by rememberSaveable { mutableStateOf("") }
@@ -1260,8 +1263,26 @@ fun SettingsPage(
         AppTextField(strings["password_new"], value = newPassword, onValueChange = { newPassword = it }, isPassword = true)
         AppTextField(strings["password_confirm"], value = confirmPassword, onValueChange = { confirmPassword = it }, isPassword = true)
         GradientButton(text = strings["save_password"], onClick = {
-          onToast(strings["save_password"])
+          onChangePassword(currentPassword, newPassword, confirmPassword)
         })
+      }
+    }
+    Spacer(modifier = Modifier.height(12.dp))
+    AppCard {
+      Text(text = strings["settings_delete_account"], fontWeight = FontWeight.Bold, fontSize = 16.sp, color = deleteButtonRed)
+      Spacer(modifier = Modifier.height(8.dp))
+      Text(text = strings["settings_delete_account_desc"], color = colors.muted, fontSize = 12.sp)
+      Spacer(modifier = Modifier.height(12.dp))
+      Box(
+        modifier = Modifier
+          .fillMaxWidth()
+          .heightIn(min = 40.dp)
+          .clip(RoundedCornerShape(12.dp))
+          .background(if (canDeleteAccount) deleteButtonRed else colors.muted.copy(alpha = 0.45f))
+          .clickable(enabled = canDeleteAccount, onClick = onDeleteAccount),
+        contentAlignment = Alignment.Center,
+      ) {
+        Text(text = strings["delete_account_action"], color = Color.White, fontWeight = FontWeight.Bold)
       }
     }
   }

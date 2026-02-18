@@ -1,8 +1,27 @@
+import java.util.Properties
+import org.gradle.api.GradleException
+
 plugins {
   id("com.android.application")
   id("org.jetbrains.kotlin.android")
   id("org.jetbrains.kotlin.plugin.compose")
   id("org.jetbrains.kotlin.plugin.serialization")
+}
+
+val localProps = Properties().apply {
+  val localFile = rootProject.file("local.properties")
+  if (localFile.exists()) {
+    localFile.inputStream().use { load(it) }
+  }
+}
+
+fun quoted(value: String): String = "\"${value.replace("\"", "\\\"")}\""
+fun requiredLocalProp(key: String): String {
+  val value = localProps.getProperty(key)?.trim().orEmpty()
+  if (value.isBlank()) {
+    throw GradleException("Missing `$key` in local.properties")
+  }
+  return value
 }
 
 android {
@@ -15,10 +34,19 @@ android {
     targetSdk = 36
     versionCode = 1
     versionName = "1.0"
+    val supabaseUrl = requiredLocalProp("SUPABASE_URL")
+    val supabaseAnonKey = requiredLocalProp("SUPABASE_ANON_KEY")
+    val adminUsername = requiredLocalProp("ADMIN_USERNAME")
+    val adminPassword = requiredLocalProp("ADMIN_PASSWORD")
+    buildConfigField("String", "SUPABASE_URL", quoted(supabaseUrl))
+    buildConfigField("String", "SUPABASE_ANON_KEY", quoted(supabaseAnonKey))
+    buildConfigField("String", "ADMIN_USERNAME", quoted(adminUsername))
+    buildConfigField("String", "ADMIN_PASSWORD", quoted(adminPassword))
   }
 
   buildFeatures {
     compose = true
+    buildConfig = true
   }
 
   kotlinOptions {
@@ -62,12 +90,17 @@ dependencies {
   implementation("com.google.android.material:material:1.13.0")
   implementation("androidx.biometric:biometric:1.1.0")
   implementation("androidx.work:work-runtime-ktx:2.11.1")
+  implementation("androidx.security:security-crypto:1.1.0-alpha06")
   implementation("io.github.jan-tennert.supabase:supabase-kt:2.4.1")
+  implementation("io.github.jan-tennert.supabase:gotrue-kt:2.4.1")
   implementation("io.github.jan-tennert.supabase:postgrest-kt:2.4.1")
   implementation("io.ktor:ktor-client-okhttp:2.3.12")
   implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
   coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.5")
   testImplementation("junit:junit:4.13.2")
+  androidTestImplementation("androidx.test.ext:junit:1.2.1")
+  androidTestImplementation("androidx.test.espresso:espresso-core:3.6.1")
+  androidTestImplementation("androidx.compose.ui:ui-test-junit4")
 
   debugImplementation("androidx.compose.ui:ui-tooling")
   debugImplementation("androidx.compose.ui:ui-test-manifest")

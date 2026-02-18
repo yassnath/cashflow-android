@@ -1,6 +1,7 @@
 package com.solvix.tabungan
 
 import io.github.jan.supabase.createSupabaseClient
+import io.github.jan.supabase.gotrue.Auth
 import io.github.jan.supabase.postgrest.Postgrest
 import io.github.jan.supabase.serializer.KotlinXSerializer
 import kotlinx.serialization.SerialName
@@ -14,9 +15,10 @@ object SupabaseClient {
   }
 
   val client = createSupabaseClient(
-    supabaseUrl = "https://idxosoeqtsncwyjwsxeb.supabase.co",
-    supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlkeG9zb2VxdHNuY3d5andzeGViIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk4MjQzNDYsImV4cCI6MjA4NTQwMDM0Nn0.qbsigizJL5nQpXSNd2M16GwHyPQoXp4eQMf2tGF3lVY",
+    supabaseUrl = BuildConfig.SUPABASE_URL,
+    supabaseKey = BuildConfig.SUPABASE_ANON_KEY,
   ) {
+    install(Auth)
     install(Postgrest) {
       serializer = KotlinXSerializer(json)
     }
@@ -33,6 +35,8 @@ data class SupabaseUser(
   val birthdate: String = "",
   @SerialName("created_at")
   val createdAt: String = "",
+  @SerialName("auth_id")
+  val authId: String = "",
   val username: String = "",
   val password: String = "",
 )

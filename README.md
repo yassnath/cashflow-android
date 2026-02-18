@@ -21,9 +21,15 @@ It helps users track income and expenses, monitor goals, analyze trends, and sta
 - Bilingual experience (English and Indonesian)
 
 ## Security and Trust
-- Authentication flow with privacy-focused onboarding
+- Username or email sign-in with secure cloud authentication
 - Fingerprint sign-in support on compatible devices
+- Password hardening with hash-based credential storage
+- Row-level security migration support for Supabase data access
 - Reliable cloud-backed data architecture
+
+## Quality Assurance
+- Automated unit test coverage for calculator, data utilities, password security, and auth error handling
+- CI workflow for build, lint, and test verification
 
 ## Technology Foundation
 - Kotlin

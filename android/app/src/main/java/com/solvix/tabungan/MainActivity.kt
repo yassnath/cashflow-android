@@ -7,6 +7,7 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.compose.setContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
@@ -30,6 +31,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -47,6 +49,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -68,6 +71,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.dp
@@ -90,7 +94,11 @@ import androidx.work.WorkManager
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
+import io.github.jan.supabase.gotrue.auth
+import io.github.jan.supabase.gotrue.providers.builtin.Email
 import io.github.jan.supabase.postgrest.from
+import io.github.jan.supabase.postgrest.postgrest
+import io.github.jan.supabase.postgrest.rpc
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -141,6 +149,7 @@ private data class GoalReachEvent(
 fun TabunganApp() {
   val context = LocalContext.current
   val prefs = remember { context.getSharedPreferences("tabungan_prefs", Context.MODE_PRIVATE) }
+  val securePrefs = remember { SecurePrefs.open(context) }
   val persistedTheme = remember {
     val storedTheme = prefs.getString(PREF_SELECTED_THEME, ThemeName.StandardLight.name)
     runCatching { ThemeName.valueOf(storedTheme ?: ThemeName.StandardLight.name) }.getOrDefault(ThemeName.StandardLight)
@@ -165,7 +174,13 @@ fun TabunganApp() {
   var pendingEdit by remember { mutableStateOf<MoneyEntry?>(null) }
   var goalReachEvent by remember { mutableStateOf<GoalReachEvent?>(null) }
   LaunchedEffect(Unit) {
-    prefs.edit { remove("face_unlock_enabled") }
+    prefs.edit {
+      remove("face_unlock_enabled")
+      remove("saved_username")
+      remove("saved_password")
+      remove("has_registered")
+      remove("saved_auth_id")
+    }
   }
   val lifecycleOwner = LocalLifecycleOwner.current
   var fadeSeed by remember { mutableIntStateOf(0) }
@@ -209,9 +224,12 @@ fun TabunganApp() {
   var hasSeenWelcome by remember { mutableStateOf(prefs.getBoolean("has_seen_welcome", false)) }
   var fingerprintEnabled by rememberSaveable { mutableStateOf(prefs.getBoolean("fingerprint_enabled", false)) }
   var biometricAllowed by rememberSaveable { mutableStateOf(prefs.getBoolean("biometric_allowed", false)) }
-  var hasRegistered by rememberSaveable { mutableStateOf(prefs.getBoolean("has_registered", false)) }
-  var savedUsername by rememberSaveable { mutableStateOf(prefs.getString("saved_username", "") ?: "") }
-  var savedPassword by rememberSaveable { mutableStateOf(prefs.getString("saved_password", "") ?: "") }
+  var hasRegistered by rememberSaveable { mutableStateOf(securePrefs.getBoolean("has_registered", false)) }
+  var savedUsername by rememberSaveable { mutableStateOf(securePrefs.getString("saved_username", "") ?: "") }
+  var savedUserId by rememberSaveable { mutableStateOf(securePrefs.getString("saved_user_id", "") ?: "") }
+  var savedAuthId by rememberSaveable { mutableStateOf(securePrefs.getString("saved_auth_id", "") ?: "") }
+  var failedSignInAttempts by rememberSaveable { mutableIntStateOf(prefs.getInt("signin_failed_attempts", 0)) }
+  var signInLockedUntil by rememberSaveable { mutableLongStateOf(prefs.getLong("signin_locked_until", 0L)) }
   var biometricPrompted by rememberSaveable { mutableStateOf(false) }
   val biometricManager = remember { BiometricManager.from(context) }
   val keyguardManager = remember {
@@ -246,29 +264,220 @@ fun TabunganApp() {
     return Instant.ofEpochMilli(millis).atZone(ZoneId.of("Asia/Jakarta")).year
   }
 
-  suspend fun fetchUserByCredentials(username: String, password: String): UserProfile? {
+  fun passwordValidationMessage(password: String): String? {
+    return when (PasswordSecurity.validatePassword(password)) {
+      PasswordSecurity.ValidationResult.Valid -> null
+      PasswordSecurity.ValidationResult.TooShort -> strings["password_validation_length"]
+      PasswordSecurity.ValidationResult.MissingUppercase -> strings["password_validation_uppercase"]
+      PasswordSecurity.ValidationResult.MissingLowercase -> strings["password_validation_lowercase"]
+      PasswordSecurity.ValidationResult.MissingDigit -> strings["password_validation_digit"]
+    }
+  }
+
+  fun SupabaseUser.toUserProfile(): UserProfile {
+    return UserProfile(
+      id = id,
+      authId = authId,
+      name = name,
+      email = email,
+      country = country,
+      birthdate = toUiDate(birthdate),
+      bio = bio.orEmpty(),
+      createdAt = createdAt,
+      username = username,
+      // Password is never shown in UI fields.
+      password = "",
+    )
+  }
+
+  suspend fun fetchUserByUsername(username: String): SupabaseUser? {
+    val normalized = username.trim()
+    if (normalized.isBlank()) return null
+
+    val errors = mutableListOf<Throwable>()
+    val directHit = try {
+      SupabaseClient.client
+        .from("users")
+        .select {
+          filter {
+            eq("username", normalized)
+          }
+          limit(1)
+        }
+        .decodeList<SupabaseUser>()
+        .firstOrNull()
+    } catch (e: Throwable) {
+      errors.add(e)
+      null
+    }
+    if (directHit != null) return directHit
+
+    val rpcHit = try {
+      SupabaseClient.client.postgrest.rpc(
+        function = "lookup_user_by_username",
+        parameters = buildJsonObject {
+          put("p_username", normalized)
+        },
+      ).decodeSingleOrNull<SupabaseUser>()
+    } catch (e: Throwable) {
+      errors.add(e)
+      null
+    }
+
+    if (rpcHit != null) return rpcHit
+    if (errors.isNotEmpty()) {
+      val kind = when {
+        errors.any { classifySignInFailure(it) == SignInFailureKind.Policy } -> SignInFailureKind.Policy
+        errors.any { classifySignInFailure(it) == SignInFailureKind.Network } -> SignInFailureKind.Network
+        errors.any { classifySignInFailure(it) == SignInFailureKind.Credentials } -> SignInFailureKind.Credentials
+        else -> SignInFailureKind.Unknown
+      }
+      throw SignInFlowException(kind, errors.first())
+    }
+    return null
+  }
+
+  suspend fun fetchUserById(userId: String): SupabaseUser? {
+    if (userId.isBlank()) return null
     val response = SupabaseClient.client
       .from("users")
       .select {
         filter {
-          eq("username", username)
-          eq("password", password)
+          eq("id", userId)
         }
         limit(1)
       }
       .decodeList<SupabaseUser>()
-    val user = response.firstOrNull() ?: return null
-    return UserProfile(
-      id = user.id,
-      name = user.name,
-      email = user.email,
-      country = user.country,
-      birthdate = toUiDate(user.birthdate),
-      bio = user.bio.orEmpty(),
-      createdAt = user.createdAt,
-      username = user.username,
-      password = user.password,
-    )
+    return response.firstOrNull()
+  }
+
+  suspend fun fetchUserByAuthId(authId: String): SupabaseUser? {
+    if (authId.isBlank()) return null
+    val response = SupabaseClient.client
+      .from("users")
+      .select {
+        filter {
+          eq("auth_id", authId)
+        }
+        limit(1)
+      }
+      .decodeList<SupabaseUser>()
+    return response.firstOrNull()
+  }
+
+  suspend fun updateUserAuthId(userId: String, authId: String) {
+    if (userId.isBlank() || authId.isBlank()) return
+    SupabaseClient.client
+      .from("users")
+      .update(
+        buildJsonObject {
+          put("auth_id", authId)
+        },
+      ) {
+        filter { eq("id", userId) }
+      }
+  }
+
+  suspend fun signInSupabaseAuth(email: String, password: String): String {
+    SupabaseClient.client.auth.awaitInitialization()
+    SupabaseClient.client.auth.signInWith(Email) {
+      this.email = email
+      this.password = password
+    }
+    val session = SupabaseClient.client.auth.currentSessionOrNull()
+    val authUserId = session?.user?.id ?: SupabaseClient.client.auth.retrieveUserForCurrentSession().id
+    return authUserId
+  }
+
+  suspend fun signUpSupabaseAuth(email: String, password: String): String {
+    SupabaseClient.client.auth.awaitInitialization()
+    val signUpResult = SupabaseClient.client.auth.signUpWith(Email) {
+      this.email = email
+      this.password = password
+    }
+    val authUserIdFromResult = signUpResult?.id.orEmpty()
+    if (authUserIdFromResult.isNotBlank()) return authUserIdFromResult
+    val session = SupabaseClient.client.auth.currentSessionOrNull()
+    return session?.user?.id ?: SupabaseClient.client.auth.retrieveUserForCurrentSession().id
+  }
+
+  suspend fun updateUserPasswordHash(userId: String, passwordHash: String) {
+    if (userId.isBlank()) return
+    SupabaseClient.client
+      .from("users")
+      .update(
+        buildJsonObject {
+          put("password", passwordHash)
+        },
+      ) {
+        filter { eq("id", userId) }
+      }
+  }
+
+  suspend fun authenticateUser(username: String, rawPassword: String): UserProfile? {
+    val normalized = username.trim()
+    if (normalized.isBlank()) return null
+
+    if (normalized.contains("@")) {
+      val authSignInResult = runCatching { signInSupabaseAuth(normalized, rawPassword) }
+      val authUserId = authSignInResult.getOrNull()
+      if (authUserId != null) {
+        return fetchUserByAuthId(authUserId)?.toUserProfile()
+      }
+      val authError = authSignInResult.exceptionOrNull()
+      val kind = classifySignInFailure(authError)
+      if (kind != SignInFailureKind.Credentials) {
+        throw SignInFlowException(kind, authError)
+      }
+      return null
+    }
+
+    val userLookupResult = runCatching { fetchUserByUsername(normalized) }
+    if (userLookupResult.isFailure) {
+      val lookupError = userLookupResult.exceptionOrNull()
+      throw SignInFlowException(classifySignInFailure(lookupError), lookupError)
+    }
+
+    val user = userLookupResult.getOrNull() ?: return null
+    val hasAuthIdentity = user.authId.isNotBlank() && user.email.isNotBlank()
+
+    if (hasAuthIdentity) {
+      val authSignInResult = runCatching { signInSupabaseAuth(user.email, rawPassword) }
+      val authUserId = authSignInResult.getOrNull()
+      if (authUserId == user.authId) return user.toUserProfile()
+
+      // Backward compatibility for accounts that are already linked but still rely on legacy password.
+      val legacyPasswordMatch = user.password.isNotBlank() && PasswordSecurity.verifyPassword(rawPassword, user.password)
+      if (legacyPasswordMatch) return user.toUserProfile()
+      if (authSignInResult.isFailure) {
+        val authError = authSignInResult.exceptionOrNull()
+        val kind = classifySignInFailure(authError)
+        if (kind != SignInFailureKind.Credentials) {
+          throw SignInFlowException(kind, authError)
+        }
+      }
+      return null
+    }
+
+    val legacyPasswordMatch = PasswordSecurity.verifyPassword(rawPassword, user.password)
+    if (!legacyPasswordMatch) return null
+
+    // Legacy fallback stays usable even if Auth migration is temporarily rate-limited.
+    var migratedAuthId = user.authId
+    if (user.email.isNotBlank()) {
+      migratedAuthId = runCatching { signInSupabaseAuth(user.email, rawPassword) }.getOrNull().orEmpty()
+      if (migratedAuthId.isBlank()) {
+        migratedAuthId = runCatching { signUpSupabaseAuth(user.email, rawPassword) }.getOrNull().orEmpty()
+      }
+      if (migratedAuthId.isNotBlank()) {
+        runCatching { updateUserAuthId(user.id, migratedAuthId) }
+      }
+    }
+    if (user.password.isNotBlank() && !PasswordSecurity.isHashed(user.password)) {
+      val migratedHash = PasswordSecurity.hashPassword(rawPassword)
+      runCatching { updateUserPasswordHash(user.id, migratedHash) }
+    }
+    return user.copy(authId = migratedAuthId).toUserProfile()
   }
 
   suspend fun userExists(username: String, email: String): Boolean {
@@ -306,13 +515,20 @@ fun TabunganApp() {
           if (user.createdAt.isNotBlank()) {
             put("created_at", user.createdAt)
           }
+          put("auth_id", user.authId)
           put("username", user.username)
-          put("password", user.password)
+          put("password", "")
         },
       )
   }
 
   suspend fun updateUserProfile(user: UserProfile) {
+    val hasPasswordInput = user.password.isNotBlank()
+    val passwordHash = if (hasPasswordInput) {
+      if (PasswordSecurity.isHashed(user.password)) user.password else PasswordSecurity.hashPassword(user.password)
+    } else {
+      ""
+    }
     SupabaseClient.client
       .from("users")
       .update(
@@ -322,22 +538,44 @@ fun TabunganApp() {
           put("country", user.country)
           put("bio", user.bio)
           put("birthdate", toUiDate(user.birthdate))
+          if (user.authId.isNotBlank()) {
+            put("auth_id", user.authId)
+          }
           put("username", user.username)
-          put("password", user.password)
+          if (hasPasswordInput) {
+            put("password", passwordHash)
+          }
         },
       ) {
         filter { eq("id", user.id) }
       }
   }
 
-  fun persistCredentials(username: String, password: String) {
-    savedUsername = username
-    savedPassword = password
+  fun persistBiometricIdentity(user: UserProfile) {
+    savedUsername = user.username
+    savedUserId = user.id
+    savedAuthId = user.authId
     hasRegistered = true
-    prefs.edit {
+    securePrefs.edit {
       putBoolean("has_registered", true)
-      putString("saved_username", username)
-      putString("saved_password", password)
+      putString("saved_username", user.username)
+      putString("saved_user_id", user.id)
+      putString("saved_auth_id", user.authId)
+    }
+  }
+
+  fun clearBiometricIdentity() {
+    hasRegistered = false
+    savedUsername = ""
+    savedUserId = ""
+    savedAuthId = ""
+    biometricAllowed = false
+    prefs.edit { putBoolean("biometric_allowed", false) }
+    securePrefs.edit {
+      putBoolean("has_registered", false)
+      putString("saved_username", "")
+      putString("saved_user_id", "")
+      putString("saved_auth_id", "")
     }
   }
 
@@ -604,28 +842,112 @@ fun TabunganApp() {
   }
 
   fun signInWithCredentials(username: String, password: String) {
+    val now = System.currentTimeMillis()
+    if (signInLockedUntil > now) {
+      val remainingSeconds = ((signInLockedUntil - now) / 1000L).coerceAtLeast(1L)
+      alertMessage = strings["signin_locked"].replace("{seconds}", remainingSeconds.toString())
+      showAlert = true
+      return
+    }
     if (username.isBlank() || password.isBlank()) {
       alertMessage = strings["signin_missing"]
       showAlert = true
       return
     }
-    if (username.trim() == "admin" && password == "adminsolvixstudio") {
+    if (username.trim() == BuildConfig.ADMIN_USERNAME && password == BuildConfig.ADMIN_PASSWORD) {
       enterAdminMode()
       scope.launch(Dispatchers.IO) {
-        val users = fetchAllUsers()
-        withContext(Dispatchers.Main) {
-          adminUsers.clear()
-          adminUsers.addAll(users)
+        try {
+          val users = fetchAllUsers()
+          withContext(Dispatchers.Main) {
+            adminUsers.clear()
+            adminUsers.addAll(users)
+          }
+        } catch (_: Exception) {
+          withContext(Dispatchers.Main) {
+            alertMessage = strings["admin_restricted"]
+            showAlert = true
+          }
         }
       }
       return
     }
     scope.launch(Dispatchers.IO) {
       try {
-        val matchedUser = fetchUserByCredentials(username.trim(), password)
+        val matchedUser = authenticateUser(username.trim(), password)
         withContext(Dispatchers.Main) {
           if (matchedUser == null) {
-            alertMessage = strings["signin_failed"]
+            failedSignInAttempts += 1
+            if (failedSignInAttempts >= 5) {
+              failedSignInAttempts = 0
+              signInLockedUntil = System.currentTimeMillis() + 30_000L
+              alertMessage = strings["signin_locked"].replace("{seconds}", "30")
+            } else {
+              alertMessage = strings["signin_failed"]
+            }
+            prefs.edit {
+              putInt("signin_failed_attempts", failedSignInAttempts)
+              putLong("signin_locked_until", signInLockedUntil)
+            }
+            showAlert = true
+          } else {
+            failedSignInAttempts = 0
+            signInLockedUntil = 0L
+            prefs.edit {
+              putInt("signin_failed_attempts", 0)
+              putLong("signin_locked_until", 0L)
+            }
+            currentUser = matchedUser
+            isLoggedIn = true
+            showAuth = false
+            biometricAllowed = true
+            prefs.edit { putBoolean("biometric_allowed", true) }
+            persistBiometricIdentity(matchedUser)
+            scheduleGoalDeadlineWorker()
+            toastMessage = strings["login_success"]
+            toastVisible = true
+            scope.launch(Dispatchers.IO) {
+              loadUserData(matchedUser.id)
+            }
+          }
+        }
+      } catch (e: Exception) {
+        Log.e("Auth", "signInWithCredentials failed", e)
+        withContext(Dispatchers.Main) {
+          val kind = if (e is SignInFlowException) e.kind else classifySignInFailure(e)
+          alertMessage = when (kind) {
+            SignInFailureKind.Policy -> strings["signin_failed_policy"]
+            SignInFailureKind.Network -> strings["signin_failed_network"]
+            SignInFailureKind.Credentials -> strings["signin_failed"]
+            SignInFailureKind.Unknown -> strings["signin_failed_network"]
+          }
+          showAlert = true
+        }
+      }
+    }
+  }
+
+  fun signInWithSavedBiometricIdentity() {
+    if (savedUserId.isBlank() || savedAuthId.isBlank()) {
+      alertMessage = strings["signin_biometric_missing"]
+      showAlert = true
+      return
+    }
+    scope.launch(Dispatchers.IO) {
+      try {
+        SupabaseClient.client.auth.awaitInitialization()
+        val activeAuthId = SupabaseClient.client.auth.currentSessionOrNull()?.user?.id
+          ?: runCatching { SupabaseClient.client.auth.retrieveUserForCurrentSession().id }.getOrNull()
+          ?: ""
+        val matchedUser = if (activeAuthId == savedAuthId) {
+          fetchUserByAuthId(savedAuthId)?.toUserProfile()
+        } else {
+          null
+        }
+        withContext(Dispatchers.Main) {
+          if (matchedUser == null) {
+            clearBiometricIdentity()
+            alertMessage = strings["signin_biometric_expired"]
             showAlert = true
           } else {
             currentUser = matchedUser
@@ -633,7 +955,7 @@ fun TabunganApp() {
             showAuth = false
             biometricAllowed = true
             prefs.edit { putBoolean("biometric_allowed", true) }
-            persistCredentials(matchedUser.username, matchedUser.password)
+            persistBiometricIdentity(matchedUser)
             scheduleGoalDeadlineWorker()
             toastMessage = strings["login_success"]
             toastVisible = true
@@ -644,7 +966,7 @@ fun TabunganApp() {
         }
       } catch (e: Exception) {
         withContext(Dispatchers.Main) {
-          alertMessage = "Gagal login: ${e.localizedMessage ?: "Cek koneksi internet"}"
+          alertMessage = "Gagal login biometric: ${e.localizedMessage ?: "Cek koneksi internet"}"
           showAlert = true
         }
       }
@@ -736,6 +1058,14 @@ fun TabunganApp() {
       .from("dream_entries")
       .delete {
         filter { eq("id", entryId) }
+      }
+  }
+
+  suspend fun deleteUserAccount(userId: String) {
+    SupabaseClient.client
+      .from("users")
+      .delete {
+        filter { eq("id", userId) }
       }
   }
 
@@ -832,12 +1162,7 @@ fun TabunganApp() {
         if (!fingerprintEnabled || !canUseFingerprint()) return@LaunchedEffect
         biometricPrompted = true
         launchFingerprintAuth {
-          if (savedUsername.isBlank() || savedPassword.isBlank()) {
-            alertMessage = strings["signin_missing"]
-            showAlert = true
-          } else {
-            signInWithCredentials(savedUsername, savedPassword)
-          }
+          signInWithSavedBiometricIdentity()
         }
       }
       LaunchedEffect(showLoading) {
@@ -868,7 +1193,7 @@ fun TabunganApp() {
         Scaffold(
           containerColor = Color.Transparent,
           bottomBar = {
-            if (!adminLoggedIn) {
+            if (!adminLoggedIn && !showAuth && !showSplash) {
               val navBlur = showSplash || showAuth
               Box {
                 BottomNav(
@@ -944,8 +1269,10 @@ fun TabunganApp() {
                           toastVisible = true
                         } else {
                           clearUserData()
-                          biometricAllowed = false
-                          prefs.edit { putBoolean("biometric_allowed", false) }
+                          clearBiometricIdentity()
+                          scope.launch(Dispatchers.IO) {
+                            runCatching { SupabaseClient.client.auth.signOut() }
+                          }
                           showSplash = false
                           showAuth = false
                           loadingTarget = LoadingTarget.Logout
@@ -1127,11 +1454,15 @@ fun TabunganApp() {
                         user = currentUser,
                         strings = strings,
                         onSave = { updated ->
-                          currentUser = updated
+                          currentUser = updated.copy(password = "")
                           if (updated.id.isNotBlank()) {
                             scope.launch {
                               try {
                                 withContext(Dispatchers.IO) { updateUserProfile(updated) }
+                                if (updated.id == savedUserId) {
+                                  savedUsername = updated.username
+                                  securePrefs.edit { putString("saved_username", updated.username) }
+                                }
                                 toastMessage = strings["save_profile"]
                                 toastVisible = true
                               } catch (ex: Exception) {
@@ -1146,8 +1477,10 @@ fun TabunganApp() {
                         },
                         onLogout = {
                           clearUserData()
-                          biometricAllowed = false
-                          prefs.edit { putBoolean("biometric_allowed", false) }
+                          clearBiometricIdentity()
+                          scope.launch(Dispatchers.IO) {
+                            runCatching { SupabaseClient.client.auth.signOut() }
+                          }
                           showSplash = false
                           showAuth = false
                           loadingTarget = LoadingTarget.Logout
@@ -1193,9 +1526,140 @@ fun TabunganApp() {
                           prefs.edit { putString("app_language", if (it == AppLanguage.ID) "ID" else "EN") }
                         },
                         strings = strings,
-                        onToast = {
-                          toastMessage = it
-                          toastVisible = true
+                        onChangePassword = { currentPassword, newPassword, confirmPassword ->
+                          val userId = currentUser?.id.orEmpty()
+                          if (userId.isBlank()) {
+                            alertMessage = strings["password_change_failed"]
+                            showAlert = true
+                            return@SettingsPage
+                          }
+                          if (currentPassword.isBlank() || newPassword.isBlank() || confirmPassword.isBlank()) {
+                            alertMessage = strings["password_validation_empty"]
+                            showAlert = true
+                            return@SettingsPage
+                          }
+                          if (newPassword == currentPassword) {
+                            alertMessage = strings["password_validation_same_as_current"]
+                            showAlert = true
+                            return@SettingsPage
+                          }
+                          if (newPassword != confirmPassword) {
+                            alertMessage = strings["password_validation_mismatch"]
+                            showAlert = true
+                            return@SettingsPage
+                          }
+                          val passwordError = passwordValidationMessage(newPassword)
+                          if (passwordError != null) {
+                            alertMessage = passwordError
+                            showAlert = true
+                            return@SettingsPage
+                          }
+                          scope.launch(Dispatchers.IO) {
+                            try {
+                              val serverUser = fetchUserById(userId)
+                              val validCurrent = if (serverUser == null) {
+                                false
+                              } else if (serverUser.authId.isNotBlank() && serverUser.email.isNotBlank()) {
+                                runCatching { signInSupabaseAuth(serverUser.email, currentPassword) }.getOrNull() == serverUser.authId
+                              } else {
+                                PasswordSecurity.verifyPassword(currentPassword, serverUser.password)
+                              }
+                              withContext(Dispatchers.Main) {
+                                if (!validCurrent) {
+                                  alertMessage = strings["password_validation_current_invalid"]
+                                  showAlert = true
+                                  return@withContext
+                                }
+                              }
+                              if (serverUser?.authId?.isNotBlank() == true) {
+                                SupabaseClient.client.auth.updateUser {
+                                  password = newPassword
+                                }
+                              } else {
+                                updateUserPasswordHash(userId, PasswordSecurity.hashPassword(newPassword))
+                              }
+                              runCatching { SupabaseClient.client.auth.signOut() }
+                              withContext(Dispatchers.Main) {
+                                clearUserData()
+                                clearBiometricIdentity()
+                                showSplash = false
+                                showAuth = false
+                                loadingTarget = LoadingTarget.Logout
+                                showLoading = true
+                                authTab = AuthTab.SignIn
+                                clearAuthFields(
+                                  onSignInUsername = { signInUsername = it },
+                                  onSignInPassword = { signInPassword = it },
+                                  onSignUpName = { signUpName = it },
+                                  onSignUpEmail = { signUpEmail = it },
+                                  onSignUpCountry = { signUpCountry = it },
+                                  onSignUpBirthdate = { signUpBirthdate = it },
+                                  onSignUpBio = { signUpBio = it },
+                                  onSignUpUsername = { signUpUsername = it },
+                                  onSignUpPassword = { signUpPassword = it },
+                                )
+                                toastMessage = strings["password_change_relogin"]
+                                toastVisible = true
+                              }
+                            } catch (_: Exception) {
+                              withContext(Dispatchers.Main) {
+                                alertMessage = strings["password_change_failed"]
+                                showAlert = true
+                              }
+                            }
+                          }
+                        },
+                        canDeleteAccount = currentUser?.id?.isNotBlank() == true,
+                        onDeleteAccount = {
+                          val userId = currentUser?.id.orEmpty()
+                          if (userId.isBlank()) {
+                            alertMessage = strings["account_delete_failed"]
+                            showAlert = true
+                          } else {
+                            requestConfirm(strings["confirm_delete_account"]) {
+                              scope.launch(Dispatchers.IO) {
+                                try {
+                                  deleteUserAccount(userId)
+                                  withContext(Dispatchers.Main) {
+                                    clearUserData()
+                                    clearBiometricIdentity()
+                                    fingerprintEnabled = false
+                                    prefs.edit {
+                                      putBoolean("fingerprint_enabled", false)
+                                      putString(PREF_SELECTED_THEME, ThemeName.StandardLight.name)
+                                    }
+                                    currentTheme = ThemeName.StandardLight
+                                    showSplash = false
+                                    showAuth = false
+                                    loadingTarget = LoadingTarget.Logout
+                                    showLoading = true
+                                    authTab = AuthTab.SignIn
+                                    scope.launch(Dispatchers.IO) {
+                                      runCatching { SupabaseClient.client.auth.signOut() }
+                                    }
+                                    clearAuthFields(
+                                      onSignInUsername = { signInUsername = it },
+                                      onSignInPassword = { signInPassword = it },
+                                      onSignUpName = { signUpName = it },
+                                      onSignUpEmail = { signUpEmail = it },
+                                      onSignUpCountry = { signUpCountry = it },
+                                      onSignUpBirthdate = { signUpBirthdate = it },
+                                      onSignUpBio = { signUpBio = it },
+                                      onSignUpUsername = { signUpUsername = it },
+                                      onSignUpPassword = { signUpPassword = it },
+                                    )
+                                    toastMessage = strings["account_deleted"]
+                                    toastVisible = true
+                                  }
+                                } catch (_: Exception) {
+                                  withContext(Dispatchers.Main) {
+                                    alertMessage = strings["account_delete_failed"]
+                                    showAlert = true
+                                  }
+                                }
+                              }
+                            }
+                          }
                         },
                       )
                       Page.Themes -> ThemesPage(currentTheme) { selected ->
@@ -1221,7 +1685,7 @@ fun TabunganApp() {
               Box(
                 modifier = Modifier
                   .matchParentSize()
-                  .background(Color(0xEFFFFFFF)),
+                  .background(Color.White),
               )
             }
           }
@@ -1312,17 +1776,12 @@ fun TabunganApp() {
                 }
                 if (authTab == AuthTab.SignIn) {
                   Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    AppTextField(strings["label_username"], value = signInUsername, onValueChange = { signInUsername = it })
+                    AppTextField(strings["label_signin_identifier"], value = signInUsername, onValueChange = { signInUsername = it })
                     AppTextField(strings["password"], value = signInPassword, onValueChange = { signInPassword = it }, isPassword = true)
                     if (fingerprintEnabled && hasRegistered && biometricAllowed) {
                       GhostButton(text = strings["auth_fingerprint"]) {
                         launchFingerprintAuth {
-                          if (savedUsername.isBlank() || savedPassword.isBlank()) {
-                            alertMessage = strings["signin_missing"]
-                            showAlert = true
-                          } else {
-                            signInWithCredentials(savedUsername, savedPassword)
-                          }
+                          signInWithSavedBiometricIdentity()
                         }
                       }
                     }
@@ -1351,8 +1810,19 @@ fun TabunganApp() {
                     AppTextField(strings["label_username"], value = signUpUsername, onValueChange = { signUpUsername = it })
                     AppTextField(strings["password"], value = signUpPassword, onValueChange = { signUpPassword = it }, isPassword = true)
                     GradientButton(text = strings["auth_register"]) {
-                      if (signUpName.isBlank() || signUpUsername.isBlank() || signUpPassword.isBlank()) {
+                      if (signUpName.isBlank() || signUpEmail.isBlank() || signUpUsername.isBlank() || signUpPassword.isBlank()) {
                         alertMessage = strings["signup_missing"]
+                        showAlert = true
+                        return@GradientButton
+                      }
+                      if (!android.util.Patterns.EMAIL_ADDRESS.matcher(signUpEmail.trim()).matches()) {
+                        alertMessage = strings["signup_email_invalid"]
+                        showAlert = true
+                        return@GradientButton
+                      }
+                      val passwordError = passwordValidationMessage(signUpPassword)
+                      if (passwordError != null) {
+                        alertMessage = passwordError
                         showAlert = true
                         return@GradientButton
                       }
@@ -1368,6 +1838,7 @@ fun TabunganApp() {
                             }
                             return@launch
                           }
+                          val authUserId = signUpSupabaseAuth(normalizedEmail, signUpPassword)
                           val newUser = SupabaseUser(
                             name = signUpName,
                             email = normalizedEmail,
@@ -1375,17 +1846,19 @@ fun TabunganApp() {
                             bio = signUpBio,
                             birthdate = signUpBirthdate,
                             createdAt = nowJakartaText(),
+                            authId = authUserId,
                             username = normalizedUsername,
-                            password = signUpPassword,
+                            password = "",
                           )
                           insertUser(newUser)
+                          runCatching { SupabaseClient.client.auth.signOut() }
                           withContext(Dispatchers.Main) {
                             isLoggedIn = false
                             showAuth = true
                             authTab = AuthTab.SignIn
                             signInUsername = normalizedUsername
                             signInPassword = ""
-                            persistCredentials(normalizedUsername, signUpPassword)
+                            clearBiometricIdentity()
                             toastMessage = strings["signup_success"]
                             toastVisible = true
                           }
@@ -1430,7 +1903,7 @@ fun TabunganApp() {
       if (showConfirm) {
         ModalOverlay {
           ModalCard {
-            Text(text = strings["confirm_title"], fontWeight = FontWeight.Bold, fontSize = 18.sp)
+            Text(text = strings["confirm_title"], fontWeight = FontWeight.Bold, fontSize = 18.sp, color = colors.text)
             Spacer(modifier = Modifier.height(8.dp))
             Text(text = confirmMessage, color = colors.muted, fontSize = 13.sp)
             Spacer(modifier = Modifier.height(12.dp))
@@ -1448,7 +1921,7 @@ fun TabunganApp() {
         if (showAlert) {
           ModalOverlay {
             ModalCard {
-              Text(text = strings["alert_title"], fontWeight = FontWeight.Bold, fontSize = 18.sp)
+              Text(text = strings["alert_title"], fontWeight = FontWeight.Bold, fontSize = 18.sp, color = colors.text)
               Spacer(modifier = Modifier.height(8.dp))
               Text(text = alertMessage, color = colors.muted, fontSize = 13.sp)
               Spacer(modifier = Modifier.height(12.dp))
@@ -1624,7 +2097,8 @@ private fun BottomNav(
   Row(
     modifier = modifier
       .fillMaxWidth()
-      .heightIn(min = 88.dp)
+      .heightIn(min = 94.dp)
+      .navigationBarsPadding()
       .clip(navShape)
       .background(colors.card)
       .border(2.dp, colors.accent, navShape)
@@ -1654,6 +2128,8 @@ private fun BottomNav(
           fontSize = 13.sp,
           fontWeight = FontWeight.SemiBold,
           color = if (active) colors.text else colors.muted,
+          maxLines = 1,
+          overflow = TextOverflow.Ellipsis,
         )
         Box(
           modifier = Modifier

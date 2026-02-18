@@ -1,0 +1,6 @@
+sdk.dir=C\:\\Users\\<your-user>\\AppData\\Local\\Android\\Sdk
+SUPABASE_URL=https\://your-project.supabase.co
+SUPABASE_ANON_KEY=your-anon-key
+ADMIN_USERNAME=admin
+ADMIN_PASSWORD=change-this-admin-password
+
