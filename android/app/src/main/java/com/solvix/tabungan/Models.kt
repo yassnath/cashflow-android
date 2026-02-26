@@ -10,6 +10,8 @@ import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.TimeZone
+import kotlinx.serialization.Serializable
+import kotlin.math.roundToInt
 
 enum class EntryType { Income, Expense }
 
@@ -33,6 +35,27 @@ data class DreamEntry(
   val deadline: String,
   val note: String,
   val sourceType: String = "income",
+)
+
+@Serializable
+data class LoanEntry(
+  val id: String = UUID.randomUUID().toString(),
+  val type: String = "friend_debt",
+  val title: String,
+  val principal: Int,
+  val paid: Int,
+  val annualInterestRate: Double,
+  val monthlyPayment: Int,
+  val dueDate: String,
+  val note: String,
+  val linkedExpenseId: String? = null,
+)
+
+data class ChatMessage(
+  val id: String = UUID.randomUUID().toString(),
+  val role: String,
+  val content: String,
+  val createdAt: String = nowJakartaText(),
 )
 
 data class UserProfile(
@@ -61,6 +84,39 @@ fun formatRupiah(value: Int): String {
     }
   }
   return "Rp " + builder.reverse().toString()
+}
+
+fun remainingLoanBalance(entry: LoanEntry): Int {
+  return (entry.principal - entry.paid).coerceAtLeast(0)
+}
+
+fun simulateLoanPayoffMonths(entry: LoanEntry): Int? {
+  val principalRemaining = remainingLoanBalance(entry).toDouble()
+  if (principalRemaining <= 0.0) return 0
+  val payment = entry.monthlyPayment.toDouble()
+  if (payment <= 0.0) return null
+
+  val monthlyRate = (entry.annualInterestRate.coerceAtLeast(0.0)) / 1200.0
+  var balance = principalRemaining
+  for (month in 1..1200) {
+    val interest = balance * monthlyRate
+    if (payment <= interest) return null
+    balance = balance + interest - payment
+    if (balance <= 0.0) return month
+  }
+  return null
+}
+
+fun simulateLoanBalanceAfterYear(entry: LoanEntry): Int {
+  val monthlyRate = (entry.annualInterestRate.coerceAtLeast(0.0)) / 1200.0
+  val payment = entry.monthlyPayment.coerceAtLeast(0).toDouble()
+  var balance = remainingLoanBalance(entry).toDouble()
+  repeat(12) {
+    if (balance <= 0.0) return@repeat
+    val interest = balance * monthlyRate
+    balance = (balance + interest - payment).coerceAtLeast(0.0)
+  }
+  return balance.roundToInt()
 }
 
 fun parseAmount(text: String): Int {

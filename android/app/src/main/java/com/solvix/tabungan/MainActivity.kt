@@ -8,6 +8,8 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.compose.setContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
@@ -103,6 +105,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.buildJsonObject
 import kotlin.math.roundToInt
 import kotlinx.serialization.json.put
@@ -126,6 +131,9 @@ enum class Page(val label: String, val icon: String) {
   Expense("Pengeluaran", "🧾"),
   Dreams("Target", "🌟"),
   History("History", "📒"),
+  Insights("Insights", "🧠"),
+  Loans("Hutang", "💳"),
+  AIChat("AI Chat", "🤖"),
   Calculator("Kalkulator", "🧮"),
   Report("Laporan", "📈"),
   Profile("Profile", "👤"),
@@ -173,6 +181,15 @@ fun TabunganApp() {
   var alertMessage by remember { mutableStateOf("") }
   var pendingEdit by remember { mutableStateOf<MoneyEntry?>(null) }
   var goalReachEvent by remember { mutableStateOf<GoalReachEvent?>(null) }
+  var notificationPermissionRequested by rememberSaveable { mutableStateOf(false) }
+  val notificationPermissionLauncher = rememberLauncherForActivityResult(
+    contract = ActivityResultContracts.RequestPermission(),
+  ) { granted ->
+    if (!granted) {
+      alertMessage = "Notification permission is required to show reminders."
+      showAlert = true
+    }
+  }
   LaunchedEffect(Unit) {
     prefs.edit {
       remove("face_unlock_enabled")
@@ -180,6 +197,16 @@ fun TabunganApp() {
       remove("saved_password")
       remove("has_registered")
       remove("saved_auth_id")
+    }
+  }
+  LaunchedEffect(Unit) {
+    if (
+      Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+      ContextCompat.checkSelfPermission(context, android.Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED &&
+      !notificationPermissionRequested
+    ) {
+      notificationPermissionRequested = true
+      notificationPermissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
     }
   }
   val lifecycleOwner = LocalLifecycleOwner.current
@@ -242,6 +269,15 @@ fun TabunganApp() {
   val incomeEntries = remember { mutableStateListOf<MoneyEntry>() }
   val expenseEntries = remember { mutableStateListOf<MoneyEntry>() }
   val dreamEntries = remember { mutableStateListOf<DreamEntry>() }
+  val loanEntries = remember { mutableStateListOf<LoanEntry>() }
+  val cachedInsights = remember { mutableStateListOf<InsightItem>() }
+  val chatMessages = remember { mutableStateListOf<ChatMessage>() }
+  var aiReplyLoading by rememberSaveable { mutableStateOf(false) }
+  var insightsRefreshing by rememberSaveable { mutableStateOf(false) }
+  var insightsTimeframe by rememberSaveable { mutableStateOf(InsightTimeframe.D30) }
+  var aiInsightsEnabled by rememberSaveable { mutableStateOf(prefs.getBoolean("ai_insights_enabled", false)) }
+  var aiInsightsPrivateMode by rememberSaveable { mutableStateOf(prefs.getBoolean("ai_insights_private_mode", true)) }
+  val localJson = remember { Json { ignoreUnknownKeys = true } }
 
   var signInUsername by rememberSaveable { mutableStateOf("") }
   var signInPassword by rememberSaveable { mutableStateOf("") }
@@ -339,6 +375,21 @@ fun TabunganApp() {
     return null
   }
 
+  suspend fun fetchUserByEmail(email: String): SupabaseUser? {
+    val normalized = email.trim()
+    if (normalized.isBlank()) return null
+    val response = SupabaseClient.client
+      .from("users")
+      .select {
+        filter {
+          eq("email", normalized)
+        }
+        limit(1)
+      }
+      .decodeList<SupabaseUser>()
+    return response.firstOrNull()
+  }
+
   suspend fun fetchUserById(userId: String): SupabaseUser? {
     if (userId.isBlank()) return null
     val response = SupabaseClient.client
@@ -424,10 +475,19 @@ fun TabunganApp() {
       val authSignInResult = runCatching { signInSupabaseAuth(normalized, rawPassword) }
       val authUserId = authSignInResult.getOrNull()
       if (authUserId != null) {
-        return fetchUserByAuthId(authUserId)?.toUserProfile()
+        val authUser = fetchUserByAuthId(authUserId)
+        if (authUser != null && (authUser.password.isBlank() || !PasswordSecurity.isHashed(authUser.password))) {
+          runCatching { updateUserPasswordHash(authUser.id, PasswordSecurity.hashPassword(rawPassword)) }
+        }
+        return authUser?.toUserProfile()
       }
       val authError = authSignInResult.exceptionOrNull()
       val kind = classifySignInFailure(authError)
+      val fallbackUser = runCatching { fetchUserByEmail(normalized) }.getOrNull()
+      if (fallbackUser != null && fallbackUser.password.isNotBlank()) {
+        val fallbackMatch = PasswordSecurity.verifyPassword(rawPassword, fallbackUser.password)
+        if (fallbackMatch) return fallbackUser.toUserProfile()
+      }
       if (kind != SignInFailureKind.Credentials) {
         throw SignInFlowException(kind, authError)
       }
@@ -446,7 +506,12 @@ fun TabunganApp() {
     if (hasAuthIdentity) {
       val authSignInResult = runCatching { signInSupabaseAuth(user.email, rawPassword) }
       val authUserId = authSignInResult.getOrNull()
-      if (authUserId == user.authId) return user.toUserProfile()
+      if (authUserId == user.authId) {
+        if (user.password.isBlank() || !PasswordSecurity.isHashed(user.password)) {
+          runCatching { updateUserPasswordHash(user.id, PasswordSecurity.hashPassword(rawPassword)) }
+        }
+        return user.toUserProfile()
+      }
 
       // Backward compatibility for accounts that are already linked but still rely on legacy password.
       val legacyPasswordMatch = user.password.isNotBlank() && PasswordSecurity.verifyPassword(rawPassword, user.password)
@@ -505,6 +570,11 @@ fun TabunganApp() {
   }
 
   suspend fun insertUser(user: SupabaseUser) {
+    val passwordHash = when {
+      user.password.isBlank() -> ""
+      PasswordSecurity.isHashed(user.password) -> user.password
+      else -> PasswordSecurity.hashPassword(user.password)
+    }
     SupabaseClient.client
       .from("users")
       .insert(
@@ -519,7 +589,7 @@ fun TabunganApp() {
           }
           put("auth_id", user.authId)
           put("username", user.username)
-          put("password", "")
+          put("password", passwordHash)
         },
       )
   }
@@ -729,6 +799,188 @@ fun TabunganApp() {
       }
   }
 
+  fun buildAiAppContext(): String {
+    return buildString {
+      appendLine("app=CashFlow Android")
+      appendLine("language=${if (currentLang == AppLanguage.ID) "ID" else "EN"}")
+      appendLine("theme=${currentTheme.name}")
+      appendLine("features=income,expense,goals,history,insights,report,calculator,debt_tracker,admin_dashboard,fingerprint_login,theme_switch")
+      appendLine("goal_rules=goals support progress source (income|expense|balance) and progress cards with percentage")
+      appendLine("debt_tracker_rules=supports friend debt, installment, credit card, paylater, remaining balance, interest simulation")
+      appendLine("insights_rules=rule-based personal insights with severity, metric chips, and action CTA")
+    }
+  }
+
+  fun buildAiUserDataContext(): String {
+    val incomeTotal = incomeEntries.sumOf { it.amount }
+    val expenseTotal = expenseEntries.sumOf { it.amount }
+    val balanceTotal = incomeTotal - expenseTotal
+    val goalsSnapshot = dreamEntries.takeLast(8).joinToString("; ") { goal ->
+      val source = goal.sourceType.ifBlank { "income" }
+      val progressRaw = when (source) {
+        "expense" -> expenseTotal
+        "balance" -> balanceTotal
+        else -> incomeTotal
+      }
+      val progress = progressRaw.coerceAtLeast(0).coerceAtMost(goal.target.coerceAtLeast(0))
+      val percent = if (goal.target > 0) ((progress.toFloat() / goal.target) * 100f).roundToInt() else 0
+      "${goal.title}: $progress/${goal.target} ($percent%) source=$source deadline=${goal.deadline}"
+    }
+    val debtSnapshot = loanEntries.takeLast(10).joinToString("; ") { loan ->
+      val remaining = remainingLoanBalance(loan)
+      "${loan.title} type=${loan.type} principal=${loan.principal} paid=${loan.paid} remaining=$remaining due=${loan.dueDate}"
+    }
+    val historySnapshot = (incomeEntries + expenseEntries)
+      .sortedByDescending { parseDateTimeMillis(it.date) ?: 0L }
+      .take(12)
+      .joinToString("; ") { entry ->
+        val kind = if (entry.type == EntryType.Income) "income" else "expense"
+        "$kind amount=${entry.amount} category=${entry.category} date=${entry.date} note=${entry.note}"
+      }
+    val insightsSnapshot = cachedInsights
+      .take(6)
+      .joinToString("; ") { insight ->
+        "${insight.title} [${insight.severity.name}] chips=${insight.metricChips.joinToString("|")}"
+      }
+    return buildString {
+      appendLine("profile=name=${currentUser?.name.orEmpty()} country=${currentUser?.country.orEmpty()}")
+      appendLine("summary=income=$incomeTotal expense=$expenseTotal balance=$balanceTotal")
+      appendLine("goals=$goalsSnapshot")
+      appendLine("debts=$debtSnapshot")
+      appendLine("recent_history=$historySnapshot")
+      appendLine("latest_insights=$insightsSnapshot")
+    }
+  }
+
+  fun detectDebtTypeHeuristic(entry: MoneyEntry): String? {
+    val text = listOf(entry.category, entry.note, entry.sourceOrMethod, entry.channelOrBank)
+      .joinToString(" ")
+      .lowercase()
+    val paylaterKeywords = listOf("paylater", "spaylater", "gopaylater", "kredivo", "akulaku")
+    val creditCardKeywords = listOf("kartu kredit", "credit card", "cc ", "visa", "mastercard")
+    val installmentKeywords = listOf("cicilan", "installment", "angsuran")
+    val friendDebtKeywords = listOf("hutang", "utang", "pinjam", "teman", "saudara")
+    return when {
+      paylaterKeywords.any { text.contains(it) } -> "paylater"
+      creditCardKeywords.any { text.contains(it) } -> "credit_card"
+      installmentKeywords.any { text.contains(it) } -> "installment"
+      friendDebtKeywords.any { text.contains(it) } -> "friend_debt"
+      else -> null
+    }
+  }
+
+  suspend fun detectDebtTypeForExpense(entry: MoneyEntry): String? {
+    val heuristic = detectDebtTypeHeuristic(entry)
+    if (heuristic != null) return heuristic
+    if (BuildConfig.CEREBRAS_API_KEY.isBlank()) return null
+    return runCatching {
+      CerebrasClient.classifyDebtCategory(
+        category = entry.category,
+        note = entry.note,
+        sourceOrMethod = entry.sourceOrMethod,
+        channelOrBank = entry.channelOrBank,
+      )
+    }.getOrNull()
+  }
+
+  fun deriveLoanTitleFromExpense(entry: MoneyEntry): String {
+    if (entry.category.isNotBlank()) return entry.category.trim()
+    if (entry.note.isNotBlank()) return entry.note.trim().take(40)
+    return "Debt from expense"
+  }
+
+  fun expenseDateOnly(entry: MoneyEntry): String {
+    val parsed = parseDate(entry.date)
+    return if (parsed != null) {
+      java.text.SimpleDateFormat("dd-MM-yyyy", java.util.Locale.US).format(java.util.Date(parsed))
+    } else {
+      entry.date.substringBefore(" ").ifBlank { entry.date }
+    }
+  }
+
+  fun syncDebtFromExpense(entry: MoneyEntry, detectedType: String?, userId: String) {
+    fun persistDebtIfNeeded() {
+      if (userId.isBlank()) return
+      val payload = runCatching { localJson.encodeToString(loanEntries.toList()) }.getOrDefault("[]")
+      securePrefs.edit { putString("loan_entries_$userId", payload) }
+    }
+    val existingIndex = loanEntries.indexOfFirst { it.linkedExpenseId == entry.id }
+    if (detectedType == null) {
+      if (existingIndex >= 0) {
+        loanEntries.removeAt(existingIndex)
+        persistDebtIfNeeded()
+      }
+      return
+    }
+    val due = expenseDateOnly(entry)
+    if (existingIndex >= 0) {
+      val existing = loanEntries[existingIndex]
+      loanEntries[existingIndex] = existing.copy(
+        type = detectedType,
+        title = if (existing.title.isBlank()) deriveLoanTitleFromExpense(entry) else existing.title,
+        dueDate = if (existing.dueDate.isBlank()) due else existing.dueDate,
+        note = if (existing.note.isBlank()) entry.note else existing.note,
+      )
+      persistDebtIfNeeded()
+      return
+    }
+    loanEntries.add(
+      LoanEntry(
+        id = java.util.UUID.randomUUID().toString(),
+        type = detectedType,
+        title = deriveLoanTitleFromExpense(entry),
+        principal = entry.amount.coerceAtLeast(1),
+        paid = 0,
+        annualInterestRate = 0.0,
+        monthlyPayment = (entry.amount / 6).coerceAtLeast(1),
+        dueDate = due,
+        note = entry.note,
+        linkedExpenseId = entry.id,
+      ),
+    )
+    persistDebtIfNeeded()
+  }
+
+  fun syncAllDebtFromExpenses(userId: String) {
+    if (userId.isBlank()) return
+    var changed = false
+    val expenseIds = expenseEntries.map { it.id }.toSet()
+    val toRemove = loanEntries.filter { it.linkedExpenseId != null && it.linkedExpenseId !in expenseIds }
+    if (toRemove.isNotEmpty()) {
+      loanEntries.removeAll(toRemove.toSet())
+      changed = true
+    }
+    expenseEntries.forEach { expense ->
+      val type = detectDebtTypeHeuristic(expense)
+      val existing = loanEntries.any { it.linkedExpenseId == expense.id }
+      if (type != null && !existing) {
+        loanEntries.add(
+          LoanEntry(
+            id = java.util.UUID.randomUUID().toString(),
+            type = type,
+            title = deriveLoanTitleFromExpense(expense),
+            principal = expense.amount.coerceAtLeast(1),
+            paid = 0,
+            annualInterestRate = 0.0,
+            monthlyPayment = (expense.amount / 6).coerceAtLeast(1),
+            dueDate = expenseDateOnly(expense),
+            note = expense.note,
+            linkedExpenseId = expense.id,
+          ),
+        )
+        changed = true
+      }
+      if (type == null && existing) {
+        loanEntries.removeAll { it.linkedExpenseId == expense.id }
+        changed = true
+      }
+    }
+    if (changed) {
+      val payload = runCatching { localJson.encodeToString(loanEntries.toList()) }.getOrDefault("[]")
+      securePrefs.edit { putString("loan_entries_$userId", payload) }
+    }
+  }
+
   suspend fun loadUserData(userId: String) {
     val moneyRows = SupabaseClient.client
       .from("money_entries")
@@ -822,6 +1074,129 @@ fun TabunganApp() {
     }
   }
 
+  fun loanStorageKey(userId: String): String = "loan_entries_$userId"
+
+  fun loadLoanEntries(userId: String) {
+    if (userId.isBlank()) {
+      loanEntries.clear()
+      return
+    }
+    val raw = securePrefs.getString(loanStorageKey(userId), "[]").orEmpty()
+    val parsed = runCatching { localJson.decodeFromString<List<LoanEntry>>(raw) }.getOrDefault(emptyList())
+    val manualOnly = parsed.filter { it.linkedExpenseId.isNullOrBlank() }
+    loanEntries.clear()
+    loanEntries.addAll(manualOnly)
+    if (manualOnly.size != parsed.size) {
+      val payload = runCatching { localJson.encodeToString(loanEntries.toList()) }.getOrDefault("[]")
+      securePrefs.edit { putString(loanStorageKey(userId), payload) }
+    }
+  }
+
+  fun persistLoanEntries(userId: String) {
+    if (userId.isBlank()) return
+    val payload = runCatching { localJson.encodeToString(loanEntries.toList()) }.getOrDefault("[]")
+    securePrefs.edit { putString(loanStorageKey(userId), payload) }
+  }
+
+  fun insightsStorageKey(userId: String): String = "insights_cache_$userId"
+
+  fun loadInsightsCache(userId: String) {
+    if (userId.isBlank()) {
+      cachedInsights.clear()
+      return
+    }
+    val raw = securePrefs.getString(insightsStorageKey(userId), "[]").orEmpty()
+    val parsed = runCatching { localJson.decodeFromString<List<InsightItem>>(raw) }.getOrDefault(emptyList())
+    cachedInsights.clear()
+    cachedInsights.addAll(parsed)
+  }
+
+  fun persistInsightsCache(userId: String) {
+    if (userId.isBlank()) return
+    val payload = runCatching { localJson.encodeToString(cachedInsights.toList()) }.getOrDefault("[]")
+    securePrefs.edit { putString(insightsStorageKey(userId), payload) }
+  }
+
+  suspend fun submitInsightFeedback(
+    userId: String,
+    insight: InsightItem,
+    isHelpful: Boolean,
+    reason: String = "",
+  ) {
+    if (userId.isBlank()) return
+    runCatching {
+      SupabaseClient.client
+        .from("insight_feedback")
+        .insert(
+          buildJsonObject {
+            put("id", java.util.UUID.randomUUID().toString())
+            put("user_id", userId)
+            put("insight_id", insight.id)
+            put("is_helpful", isHelpful)
+            put("reason", reason)
+            put("created_at", nowJakartaText())
+          },
+        )
+    }
+  }
+
+  suspend fun refreshInsights(userId: String, timeframe: InsightTimeframe, forceAi: Boolean = false) {
+    withContext(Dispatchers.Main) { insightsRefreshing = true }
+    val generated = generateInsights(
+      incomeEntries = incomeEntries.toList(),
+      expenseEntries = expenseEntries.toList(),
+      goals = dreamEntries.toList(),
+      debts = loanEntries.toList(),
+      timeframe = timeframe,
+    ).toMutableList()
+
+    if ((aiInsightsEnabled || forceAi) && BuildConfig.CEREBRAS_API_KEY.isNotBlank()) {
+      val summary = buildCompactInsightSummary(
+        incomeEntries = incomeEntries.toList(),
+        expenseEntries = expenseEntries.toList(),
+        goals = dreamEntries.toList(),
+        debts = loanEntries.toList(),
+        timeframe = timeframe,
+        privateMode = aiInsightsPrivateMode,
+      )
+      val aiMessage = runCatching {
+        CerebrasClient.enrichInsightsNarrative(localJson.encodeToString(summary))
+      }.getOrNull()
+      if (!aiMessage.isNullOrBlank()) {
+        generated.add(
+          0,
+          InsightItem(
+            id = "ai_narrative_${timeframe.name}_${System.currentTimeMillis()}",
+            title = strings["insights_ai_title"],
+            message = aiMessage,
+            severity = InsightSeverity.INFO,
+            category = InsightCategory.Savings,
+            metricChips = listOf(strings["insights_ai_chip"]),
+            actionCta = strings["menu_report"],
+            actionTargetPage = Page.Report.name,
+            createdAt = nowJakartaText(),
+            timeframe = timeframe,
+          ),
+        )
+      }
+    }
+
+    withContext(Dispatchers.Main) {
+      cachedInsights.clear()
+      cachedInsights.addAll(generated)
+      persistInsightsCache(userId)
+      insightsRefreshing = false
+    }
+  }
+
+  suspend fun requestAiReply(history: List<ChatMessage>): String {
+    return CerebrasClient.requestFinancialAdvice(
+      messages = history.takeLast(14),
+      appContext = buildAiAppContext(),
+      userDataContext = buildAiUserDataContext(),
+    )
+  }
+
   fun clearUserData() {
     currentUser = null
     isLoggedIn = false
@@ -835,6 +1210,11 @@ fun TabunganApp() {
     incomeEntries.clear()
     expenseEntries.clear()
     dreamEntries.clear()
+    loanEntries.clear()
+    cachedInsights.clear()
+    chatMessages.clear()
+    aiReplyLoading = false
+    insightsRefreshing = false
   }
 
   fun enterAdminMode() {
@@ -916,11 +1296,14 @@ fun TabunganApp() {
             biometricAllowed = true
             prefs.edit { putBoolean("biometric_allowed", true) }
             persistBiometricIdentity(matchedUser)
+            loadLoanEntries(matchedUser.id)
+            loadInsightsCache(matchedUser.id)
             scheduleGoalDeadlineWorker()
             toastMessage = strings["login_success"]
             toastVisible = true
             scope.launch(Dispatchers.IO) {
               loadUserData(matchedUser.id)
+              refreshInsights(matchedUser.id, insightsTimeframe)
             }
           }
         }
@@ -989,17 +1372,20 @@ fun TabunganApp() {
             biometricAllowed = true
             prefs.edit { putBoolean("biometric_allowed", true) }
             persistBiometricIdentity(matchedUser)
+            loadLoanEntries(matchedUser.id)
+            loadInsightsCache(matchedUser.id)
             scheduleGoalDeadlineWorker()
             toastMessage = strings["login_success"]
             toastVisible = true
             scope.launch(Dispatchers.IO) {
               loadUserData(matchedUser.id)
+              refreshInsights(matchedUser.id, insightsTimeframe)
             }
           }
         }
       } catch (e: Exception) {
         withContext(Dispatchers.Main) {
-          alertMessage = "Gagal login biometric: ${e.localizedMessage ?: "Cek koneksi internet"}"
+          alertMessage = strings["signin_biometric_expired"]
           showAlert = true
         }
       }
@@ -1373,7 +1759,10 @@ fun TabunganApp() {
                           incomeEntries.add(entry)
                           updateGoalMilestones()
                           if (activeUserId.isNotBlank()) {
-                            scope.launch(Dispatchers.IO) { insertMoneyEntry(activeUserId, entry) }
+                            scope.launch(Dispatchers.IO) {
+                              insertMoneyEntry(activeUserId, entry)
+                              refreshInsights(activeUserId, insightsTimeframe)
+                            }
                           }
                           toastMessage = strings["income_added"]
                           toastVisible = true
@@ -1383,7 +1772,10 @@ fun TabunganApp() {
                           if (index >= 0) incomeEntries[index] = entry
                           updateGoalMilestones()
                           if (activeUserId.isNotBlank()) {
-                            scope.launch(Dispatchers.IO) { updateMoneyEntry(entry) }
+                            scope.launch(Dispatchers.IO) {
+                              updateMoneyEntry(entry)
+                              refreshInsights(activeUserId, insightsTimeframe)
+                            }
                           }
                           toastMessage = strings["income_updated"]
                           toastVisible = true
@@ -1397,7 +1789,10 @@ fun TabunganApp() {
                           expenseEntries.add(entry)
                           updateGoalMilestones()
                           if (activeUserId.isNotBlank()) {
-                            scope.launch(Dispatchers.IO) { insertMoneyEntry(activeUserId, entry) }
+                            scope.launch(Dispatchers.IO) {
+                              insertMoneyEntry(activeUserId, entry)
+                              refreshInsights(activeUserId, insightsTimeframe)
+                            }
                           }
                           toastMessage = strings["expense_added"]
                           toastVisible = true
@@ -1407,7 +1802,10 @@ fun TabunganApp() {
                           if (index >= 0) expenseEntries[index] = entry
                           updateGoalMilestones()
                           if (activeUserId.isNotBlank()) {
-                            scope.launch(Dispatchers.IO) { updateMoneyEntry(entry) }
+                            scope.launch(Dispatchers.IO) {
+                              updateMoneyEntry(entry)
+                              refreshInsights(activeUserId, insightsTimeframe)
+                            }
                           }
                           toastMessage = strings["expense_updated"]
                           toastVisible = true
@@ -1429,7 +1827,10 @@ fun TabunganApp() {
                           dreamEntries.add(entry)
                           updateGoalMilestones()
                           if (activeUserId.isNotBlank()) {
-                            scope.launch(Dispatchers.IO) { insertDreamEntry(activeUserId, entry) }
+                            scope.launch(Dispatchers.IO) {
+                              insertDreamEntry(activeUserId, entry)
+                              refreshInsights(activeUserId, insightsTimeframe)
+                            }
                           }
                           toastMessage = strings["dream_added"]
                           toastVisible = true
@@ -1439,7 +1840,10 @@ fun TabunganApp() {
                           if (index >= 0) dreamEntries[index] = entry
                           updateGoalMilestones()
                           if (activeUserId.isNotBlank()) {
-                            scope.launch(Dispatchers.IO) { updateDreamEntry(entry) }
+                            scope.launch(Dispatchers.IO) {
+                              updateDreamEntry(entry)
+                              refreshInsights(activeUserId, insightsTimeframe)
+                            }
                           }
                           toastMessage = strings["dream_updated"]
                           toastVisible = true
@@ -1449,7 +1853,10 @@ fun TabunganApp() {
                             dreamEntries.removeAll { it.id == entry.id }
                             updateGoalMilestones()
                             if (activeUserId.isNotBlank()) {
-                              scope.launch(Dispatchers.IO) { deleteDreamEntry(entry.id) }
+                              scope.launch(Dispatchers.IO) {
+                                deleteDreamEntry(entry.id)
+                                refreshInsights(activeUserId, insightsTimeframe)
+                              }
                             }
                             toastMessage = strings["dream_deleted"]
                             toastVisible = true
@@ -1484,10 +1891,106 @@ fun TabunganApp() {
                               }
                             }
                             if (activeUserId.isNotBlank()) {
-                              scope.launch(Dispatchers.IO) { deleteMoneyEntry(entry.id) }
+                              scope.launch(Dispatchers.IO) {
+                                deleteMoneyEntry(entry.id)
+                                refreshInsights(activeUserId, insightsTimeframe)
+                              }
                             }
                           }
                         },
+                      )
+                      Page.Insights -> InsightsPage(
+                        insights = cachedInsights.toList(),
+                        defaultTimeframe = insightsTimeframe,
+                        onRefresh = { timeframe ->
+                          insightsTimeframe = timeframe
+                          if (activeUserId.isNotBlank()) {
+                            scope.launch(Dispatchers.IO) { refreshInsights(activeUserId, timeframe, forceAi = false) }
+                          }
+                        },
+                        onAction = { insight ->
+                          val target = runCatching { Page.valueOf(insight.actionTargetPage) }.getOrNull()
+                          if (target != null) navigateTo(target)
+                        },
+                        onFeedback = { insight, helpful ->
+                          if (activeUserId.isNotBlank()) {
+                            scope.launch(Dispatchers.IO) { submitInsightFeedback(activeUserId, insight, helpful) }
+                          }
+                        },
+                        isRefreshing = insightsRefreshing,
+                        strings = strings,
+                      )
+                      Page.Loans -> LoanTrackingPage(
+                        entries = loanEntries,
+                        onInvalid = {
+                          alertMessage = strings["loan_missing"]
+                          showAlert = true
+                        },
+                        onSave = { entry ->
+                          loanEntries.add(entry)
+                          persistLoanEntries(activeUserId)
+                          if (activeUserId.isNotBlank()) {
+                            scope.launch(Dispatchers.IO) { refreshInsights(activeUserId, insightsTimeframe) }
+                          }
+                          toastMessage = strings["loan_added"]
+                          toastVisible = true
+                        },
+                        onUpdate = { entry ->
+                          val index = loanEntries.indexOfFirst { it.id == entry.id }
+                          if (index >= 0) {
+                            loanEntries[index] = entry
+                            persistLoanEntries(activeUserId)
+                            if (activeUserId.isNotBlank()) {
+                              scope.launch(Dispatchers.IO) { refreshInsights(activeUserId, insightsTimeframe) }
+                            }
+                            toastMessage = strings["loan_updated"]
+                            toastVisible = true
+                          }
+                        },
+                        onDelete = { entry ->
+                          requestConfirm(strings["confirm_delete_loan"]) {
+                            loanEntries.removeAll { it.id == entry.id }
+                            persistLoanEntries(activeUserId)
+                            if (activeUserId.isNotBlank()) {
+                              scope.launch(Dispatchers.IO) { refreshInsights(activeUserId, insightsTimeframe) }
+                            }
+                            toastMessage = strings["loan_deleted"]
+                            toastVisible = true
+                          }
+                        },
+                        strings = strings,
+                      )
+                      Page.AIChat -> AiChatPage(
+                        messages = chatMessages,
+                        isLoading = aiReplyLoading,
+                        onClear = { chatMessages.clear() },
+                        onSend = { prompt ->
+                          val trimmed = prompt.trim()
+                          if (trimmed.isBlank() || aiReplyLoading) return@AiChatPage
+                          chatMessages.add(ChatMessage(role = "user", content = trimmed))
+                          aiReplyLoading = true
+                          scope.launch(Dispatchers.IO) {
+                            try {
+                              val reply = requestAiReply(chatMessages.toList())
+                              withContext(Dispatchers.Main) {
+                                chatMessages.add(ChatMessage(role = "assistant", content = reply))
+                                aiReplyLoading = false
+                              }
+                            } catch (e: Exception) {
+                              Log.e("AIChat", "Request failed", e)
+                              withContext(Dispatchers.Main) {
+                                aiReplyLoading = false
+                                alertMessage = if (BuildConfig.CEREBRAS_API_KEY.isBlank()) {
+                                  strings["ai_not_configured"]
+                                } else {
+                                  strings["ai_request_failed"]
+                                }
+                                showAlert = true
+                              }
+                            }
+                          }
+                        },
+                        strings = strings,
                       )
                       Page.Calculator -> CalculatorPage()
                       Page.Report -> ReportPage(
@@ -1568,6 +2071,22 @@ fun TabunganApp() {
                           } else {
                             fingerprintEnabled = false
                             prefs.edit { putBoolean("fingerprint_enabled", false) }
+                          }
+                        },
+                        aiInsightsEnabled = aiInsightsEnabled,
+                        onAiInsightsToggle = { enabled ->
+                          aiInsightsEnabled = enabled
+                          prefs.edit { putBoolean("ai_insights_enabled", enabled) }
+                          if (enabled && activeUserId.isNotBlank()) {
+                            scope.launch(Dispatchers.IO) { refreshInsights(activeUserId, insightsTimeframe, forceAi = true) }
+                          }
+                        },
+                        aiInsightsPrivateMode = aiInsightsPrivateMode,
+                        onAiInsightsPrivateModeToggle = { enabled ->
+                          aiInsightsPrivateMode = enabled
+                          prefs.edit { putBoolean("ai_insights_private_mode", enabled) }
+                          if (activeUserId.isNotBlank()) {
+                            scope.launch(Dispatchers.IO) { refreshInsights(activeUserId, insightsTimeframe) }
                           }
                         },
                         language = currentLang,
@@ -1671,6 +2190,8 @@ fun TabunganApp() {
                                 try {
                                   deleteUserAccount(userId)
                                   withContext(Dispatchers.Main) {
+                                    securePrefs.edit { remove(loanStorageKey(userId)) }
+                                    securePrefs.edit { remove(insightsStorageKey(userId)) }
                                     clearUserData()
                                     clearBiometricIdentity()
                                     fingerprintEnabled = false
@@ -1898,7 +2419,7 @@ fun TabunganApp() {
                             createdAt = nowJakartaText(),
                             authId = authUserId,
                             username = normalizedUsername,
-                            password = "",
+                            password = signUpPassword,
                           )
                           insertUser(newUser)
                           runCatching { SupabaseClient.client.auth.signOut() }
@@ -2105,6 +2626,21 @@ private fun TopBar(
               emoji = themePageIcon(theme, Page.Themes),
               active = currentPage == Page.Themes,
             ) { onNavigate(Page.Themes) }
+            MenuItem(
+              text = strings["menu_insights"],
+              emoji = themePageIcon(theme, Page.Insights),
+              active = currentPage == Page.Insights,
+            ) { onNavigate(Page.Insights) }
+            MenuItem(
+              text = strings["menu_loans"],
+              emoji = themePageIcon(theme, Page.Loans),
+              active = currentPage == Page.Loans,
+            ) { onNavigate(Page.Loans) }
+            MenuItem(
+              text = strings["menu_ai_chat"],
+              emoji = themePageIcon(theme, Page.AIChat),
+              active = currentPage == Page.AIChat,
+            ) { onNavigate(Page.AIChat) }
             MenuItem(
               text = strings["menu_calculator"],
               emoji = themePageIcon(theme, Page.Calculator),
@@ -2350,14 +2886,6 @@ private fun LoadingLogo() {
         fontSize = 12.sp,
       )
     }
-    Text(
-      text = strings["footer"],
-      color = Color(0xFF9CA3AF),
-      fontSize = 11.sp,
-      modifier = Modifier
-        .align(Alignment.BottomCenter)
-        .padding(bottom = 18.dp),
-    )
   }
 }
 
@@ -2367,6 +2895,9 @@ private fun pageLabel(page: Page, strings: AppStrings): String {
     Page.Expense -> strings["page_expense"]
     Page.Dreams -> strings["page_dreams"]
     Page.History -> strings["page_history"]
+    Page.Insights -> strings["page_insights"]
+    Page.Loans -> strings["page_loans"]
+    Page.AIChat -> strings["page_ai_chat"]
     Page.Calculator -> strings["page_calculator"]
     Page.Report -> strings["page_report"]
     Page.Profile -> strings["page_profile"]

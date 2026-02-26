@@ -4,6 +4,8 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -55,7 +57,9 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import android.content.Context
@@ -541,6 +545,430 @@ fun DreamsPage(
         }
       }
     }
+  }
+}
+
+@Composable
+fun LoanTrackingPage(
+  entries: List<LoanEntry>,
+  onInvalid: () -> Unit,
+  onSave: (LoanEntry) -> Unit,
+  onUpdate: (LoanEntry) -> Unit,
+  onDelete: (LoanEntry) -> Unit,
+  strings: AppStrings,
+) {
+  val colors = LocalAppColors.current
+  var type by rememberSaveable { mutableStateOf("") }
+  var title by rememberSaveable { mutableStateOf("") }
+  var principal by rememberSaveable { mutableStateOf("") }
+  var paid by rememberSaveable { mutableStateOf("") }
+  var annualRate by rememberSaveable { mutableStateOf("") }
+  var monthlyPayment by rememberSaveable { mutableStateOf("") }
+  var dueDate by rememberSaveable { mutableStateOf("") }
+  var note by rememberSaveable { mutableStateOf("") }
+  var editingId by rememberSaveable { mutableStateOf<String?>(null) }
+  var editingLinkedExpenseId by rememberSaveable { mutableStateOf<String?>(null) }
+
+  val typeLabels = mapOf(
+    "friend_debt" to strings["loan_type_friend_debt"],
+    "installment" to strings["loan_type_installment"],
+    "credit_card" to strings["loan_type_credit_card"],
+    "paylater" to strings["loan_type_paylater"],
+    "other" to strings["loan_type_other"],
+  )
+  val selectedTypeLabel = typeLabels[type].orEmpty()
+
+  fun beginEdit(entry: LoanEntry) {
+    editingId = entry.id
+    type = entry.type
+    title = entry.title
+    principal = entry.principal.toString()
+    paid = entry.paid.toString()
+    annualRate = formatRateInput(entry.annualInterestRate)
+    monthlyPayment = entry.monthlyPayment.toString()
+    dueDate = entry.dueDate
+    note = entry.note
+    editingLinkedExpenseId = entry.linkedExpenseId
+  }
+
+  fun resetForm() {
+    editingId = null
+    editingLinkedExpenseId = null
+    type = ""
+    title = ""
+    principal = ""
+    paid = ""
+    annualRate = ""
+    monthlyPayment = ""
+    dueDate = ""
+    note = ""
+  }
+
+  Column {
+    SectionTitle(
+      icon = themePageIcon(LocalThemeName.current, Page.Loans),
+      title = strings["section_loans_title"],
+      subtitle = strings["section_loans_subtitle"],
+    )
+    AppCard {
+      Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        AppDropdown(
+          label = strings["loan_type"],
+          placeholder = strings["placeholder_source"],
+          options = typeLabels.values.toList(),
+          selected = selectedTypeLabel,
+          onSelected = { label ->
+            type = typeLabels.entries.firstOrNull { it.value == label }?.key.orEmpty()
+          },
+        )
+        AppTextField(
+          label = strings["loan_title"],
+          value = title,
+          onValueChange = { title = it },
+          placeholder = strings["placeholder_goal"],
+        )
+        AppTextField(
+          label = strings["loan_principal"],
+          value = principal,
+          onValueChange = { principal = it },
+          keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+        )
+        AppTextField(
+          label = strings["loan_paid"],
+          value = paid,
+          onValueChange = { paid = it },
+          keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+        )
+        AppTextField(
+          label = strings["loan_interest_rate"],
+          value = annualRate,
+          onValueChange = { annualRate = it },
+          placeholder = "0.0",
+          keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+        )
+        AppTextField(
+          label = strings["loan_monthly_payment"],
+          value = monthlyPayment,
+          onValueChange = { monthlyPayment = it },
+          keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+        )
+        DateField(
+          label = strings["loan_due_date"],
+          value = dueDate,
+          onValueChange = { dueDate = it },
+          placeholder = strings["placeholder_date"],
+        )
+        AppTextField(
+          label = strings["loan_note"],
+          value = note,
+          onValueChange = { note = it },
+          placeholder = strings["placeholder_note"],
+          minLines = 2,
+        )
+        val titleValue = title.trim()
+        val principalValue = parseAmount(principal)
+        val paidValue = parseAmount(paid).coerceAtLeast(0)
+        val annualRateValue = parseRate(annualRate)
+        val monthlyPaymentValue = parseAmount(monthlyPayment)
+        val isValid = type.isNotBlank() &&
+          titleValue.isNotBlank() &&
+          principalValue > 0 &&
+          monthlyPaymentValue > 0 &&
+          dueDate.isNotBlank()
+        GradientButton(
+          text = if (editingId == null) strings["save_dream"] else strings["update_dream"],
+          enabled = isValid,
+          onClick = {
+            if (!isValid) {
+              onInvalid()
+              return@GradientButton
+            }
+            val payload = LoanEntry(
+              id = editingId ?: UUIDString(),
+              type = type,
+              title = titleValue,
+              principal = principalValue,
+              paid = paidValue.coerceIn(0, principalValue),
+              annualInterestRate = annualRateValue.coerceAtLeast(0.0),
+              monthlyPayment = monthlyPaymentValue,
+              dueDate = dueDate,
+              note = note.trim(),
+              linkedExpenseId = editingLinkedExpenseId,
+            )
+            if (editingId == null) onSave(payload) else onUpdate(payload)
+            resetForm()
+          },
+        )
+      }
+    }
+    if (entries.isNotEmpty()) {
+      Spacer(modifier = Modifier.height(12.dp))
+      Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        entries.forEach { entry ->
+          LoanEntryCard(
+            entry = entry,
+            onEdit = { beginEdit(entry) },
+            onDelete = { onDelete(entry) },
+            strings = strings,
+          )
+        }
+      }
+    }
+  }
+}
+
+@Composable
+private fun LoanEntryCard(
+  entry: LoanEntry,
+  onEdit: () -> Unit,
+  onDelete: () -> Unit,
+  strings: AppStrings,
+) {
+  val colors = LocalAppColors.current
+  val remaining = remainingLoanBalance(entry)
+  val payoffMonths = simulateLoanPayoffMonths(entry)
+  val balanceAfterYear = simulateLoanBalanceAfterYear(entry)
+  val dueDateLabel = entry.dueDate.ifBlank { "-" }
+  val noteText = entry.note.ifBlank { "-" }
+  val remainingColor = if (remaining > 0) colors.danger else colors.accent2
+
+  AppCard(shape = RoundedCornerShape(AppDimens.radiusMd)) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+      Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+      ) {
+        Text(text = entry.title, fontWeight = FontWeight.Bold, color = colors.text)
+        Text(
+          text = loanTypeLabel(entry.type, strings),
+          color = colors.muted,
+          fontSize = 11.sp,
+        )
+      }
+      Text(text = "${strings["loan_principal"]}: ${formatRupiah(entry.principal)}", color = colors.muted, fontSize = 12.sp)
+      Text(text = "${strings["loan_paid"]}: ${formatRupiah(entry.paid)}", color = colors.muted, fontSize = 12.sp)
+      Text(
+        text = "${strings["loan_remaining"]}: ${formatRupiah(remaining)}",
+        color = remainingColor,
+        fontWeight = FontWeight.SemiBold,
+        fontSize = 12.sp,
+      )
+      Text(
+        text = "${strings["loan_interest_simulation"]}: ${entry.annualInterestRate}%",
+        color = colors.muted,
+        fontSize = 12.sp,
+      )
+      Text(
+        text = "${strings["loan_payoff_estimate"]}: ${loanPayoffEstimateLabel(payoffMonths, strings)}",
+        color = colors.muted,
+        fontSize = 12.sp,
+      )
+      Text(
+        text = "${strings["loan_balance_after_year"]}: ${formatRupiah(balanceAfterYear)}",
+        color = colors.muted,
+        fontSize = 12.sp,
+      )
+      Text(text = "${strings["loan_due_date"]}: $dueDateLabel", color = colors.muted, fontSize = 12.sp)
+      Text(text = "${strings["note_label"]}: $noteText", color = colors.muted, fontSize = 12.sp)
+      Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+        Box(
+          modifier = Modifier
+            .weight(1f)
+            .heightIn(min = 40.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .background(Brush.linearGradient(listOf(colors.accent, colors.accent2)))
+            .clickable { onEdit() },
+          contentAlignment = Alignment.Center,
+        ) {
+          Text(text = strings["edit"], color = Color.White, fontWeight = FontWeight.SemiBold, fontSize = 12.sp)
+        }
+        Box(
+          modifier = Modifier
+            .weight(1f)
+            .heightIn(min = 40.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .background(Color(0xFFD32F2F))
+            .clickable { onDelete() },
+          contentAlignment = Alignment.Center,
+        ) {
+          Text(text = strings["delete"], color = Color.White, fontWeight = FontWeight.SemiBold, fontSize = 12.sp)
+        }
+      }
+    }
+  }
+}
+
+@Composable
+fun AiChatPage(
+  messages: List<ChatMessage>,
+  isLoading: Boolean,
+  onSend: (String) -> Unit,
+  onClear: () -> Unit,
+  strings: AppStrings,
+) {
+  val colors = LocalAppColors.current
+  val screenHeight = with(LocalDensity.current) { LocalWindowInfo.current.containerSize.height.toDp() }
+  val chatCardHeight = (screenHeight - 250.dp).coerceIn(340.dp, 560.dp)
+  var prompt by rememberSaveable { mutableStateOf("") }
+  val messageScrollState = rememberScrollState()
+
+  LaunchedEffect(messages.size, isLoading) {
+    messageScrollState.scrollTo(messageScrollState.maxValue)
+  }
+
+  Column {
+    SectionTitle(
+      icon = themePageIcon(LocalThemeName.current, Page.AIChat),
+      title = strings["section_ai_chat_title"],
+      subtitle = strings["section_ai_chat_subtitle"],
+    )
+    AppCard {
+      Column(
+        modifier = Modifier
+          .fillMaxWidth()
+          .height(chatCardHeight),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+      ) {
+        Text(
+          text = strings["ai_disclaimer"],
+          color = colors.muted,
+          fontSize = 12.sp,
+        )
+        Box(
+          modifier = Modifier
+            .fillMaxWidth()
+            .weight(1f)
+            .clip(RoundedCornerShape(14.dp))
+            .background(colors.bg2.copy(alpha = 0.4f))
+            .border(1.dp, colors.cardBorder, RoundedCornerShape(14.dp))
+            .padding(10.dp),
+        ) {
+          Column(
+            modifier = Modifier
+              .fillMaxWidth()
+              .verticalScroll(messageScrollState),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+          ) {
+            if (messages.isEmpty()) {
+              Text(
+                text = strings["ai_prompt_placeholder"],
+                color = colors.placeholder,
+                fontSize = 12.sp,
+              )
+            } else {
+              messages.forEach { message ->
+                val userMessage = message.role.equals("user", ignoreCase = true)
+                Row(
+                  modifier = Modifier.fillMaxWidth(),
+                  horizontalArrangement = if (userMessage) Arrangement.End else Arrangement.Start,
+                ) {
+                  Box(
+                    modifier = Modifier
+                      .widthIn(max = 280.dp)
+                      .clip(RoundedCornerShape(14.dp))
+                      .background(
+                        if (userMessage) {
+                          Brush.linearGradient(listOf(colors.accent, colors.accent2))
+                        } else {
+                          Brush.linearGradient(listOf(colors.bg2, colors.bg2))
+                        },
+                      )
+                      .border(1.dp, colors.cardBorder, RoundedCornerShape(14.dp))
+                      .padding(horizontal = 12.dp, vertical = 10.dp),
+                  ) {
+                    Text(
+                      text = message.content,
+                      color = if (userMessage) Color.White else colors.text,
+                      fontSize = 13.sp,
+                    )
+                  }
+                }
+              }
+            }
+            if (isLoading) {
+              Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.Start,
+              ) {
+                Box(
+                  modifier = Modifier
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(colors.bg2)
+                    .border(1.dp, colors.cardBorder, RoundedCornerShape(14.dp))
+                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                ) {
+                  Text(
+                    text = strings["ai_typing"],
+                    color = colors.muted,
+                    fontSize = 12.sp,
+                  )
+                }
+              }
+            }
+          }
+        }
+        AppTextField(
+          label = "",
+          value = prompt,
+          onValueChange = { prompt = it },
+          placeholder = strings["ai_prompt_placeholder"],
+          minLines = 2,
+        )
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+          GhostButton(
+            text = strings["ai_clear"],
+            fillMaxWidth = false,
+            modifier = Modifier.weight(1f),
+            onClick = {
+              prompt = ""
+              onClear()
+            },
+          )
+          GradientButton(
+            text = strings["ai_send"],
+            enabled = prompt.trim().isNotBlank() && !isLoading,
+            modifier = Modifier.weight(1f),
+            onClick = {
+              val value = prompt.trim()
+              if (value.isBlank()) return@GradientButton
+              onSend(value)
+              prompt = ""
+            },
+          )
+        }
+      }
+    }
+  }
+}
+
+private fun parseRate(text: String): Double {
+  val normalized = text.trim().replace(',', '.')
+  return normalized.toDoubleOrNull() ?: 0.0
+}
+
+private fun formatRateInput(value: Double): String {
+  return if (value % 1.0 == 0.0) {
+    value.toInt().toString()
+  } else {
+    value.toString()
+  }
+}
+
+private fun loanTypeLabel(type: String, strings: AppStrings): String {
+  return when (type) {
+    "friend_debt" -> strings["loan_type_friend_debt"]
+    "installment" -> strings["loan_type_installment"]
+    "credit_card" -> strings["loan_type_credit_card"]
+    "paylater" -> strings["loan_type_paylater"]
+    else -> strings["loan_type_other"]
+  }
+}
+
+private fun loanPayoffEstimateLabel(months: Int?, strings: AppStrings): String {
+  return when {
+    months == null -> strings["loan_no_estimate"]
+    months == 0 -> strings["loan_paid_off"]
+    else -> "$months ${strings["loan_month_unit"]}"
   }
 }
 
@@ -1192,6 +1620,10 @@ private fun ProfileLine(label: String, value: String) {
 fun SettingsPage(
   fingerprintEnabled: Boolean,
   onFingerprintToggle: (Boolean) -> Unit,
+  aiInsightsEnabled: Boolean,
+  onAiInsightsToggle: (Boolean) -> Unit,
+  aiInsightsPrivateMode: Boolean,
+  onAiInsightsPrivateModeToggle: (Boolean) -> Unit,
   language: AppLanguage,
   onLanguageChange: (AppLanguage) -> Unit,
   strings: AppStrings,
@@ -1232,7 +1664,44 @@ fun SettingsPage(
           onCheckedChange = onFingerprintToggle,
         )
       }
-      Spacer(modifier = Modifier.height(10.dp))
+      Spacer(modifier = Modifier.height(12.dp))
+      Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+      ) {
+        Column(modifier = Modifier.weight(1f)) {
+          Text(text = strings["settings_ai_insights"], fontSize = 12.sp, color = colors.text)
+          Text(
+            text = strings["settings_ai_insights_desc"],
+            color = colors.muted,
+            fontSize = 11.sp,
+          )
+        }
+        Switch(
+          checked = aiInsightsEnabled,
+          onCheckedChange = onAiInsightsToggle,
+        )
+      }
+      Spacer(modifier = Modifier.height(12.dp))
+      Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+      ) {
+        Column(modifier = Modifier.weight(1f)) {
+          Text(text = strings["settings_ai_private_mode"], fontSize = 12.sp, color = colors.text)
+          Text(
+            text = strings["settings_ai_private_mode_desc"],
+            color = colors.muted,
+            fontSize = 11.sp,
+          )
+        }
+        Switch(
+          checked = aiInsightsPrivateMode,
+          onCheckedChange = onAiInsightsPrivateModeToggle,
+        )
+      }
     }
     Spacer(modifier = Modifier.height(12.dp))
     AppCard {
@@ -1431,7 +1900,11 @@ private fun buildMonthlySeries(income: List<MoneyEntry>, expense: List<MoneyEntr
   val labels = mutableListOf<String>()
   val incomeTotals = mutableListOf<Int>()
   val expenseTotals = mutableListOf<Int>()
-  val locale = if (language == AppLanguage.ID) Locale("id", "ID") else Locale.US
+  val locale = if (language == AppLanguage.ID) {
+    Locale.Builder().setLanguage("id").setRegion("ID").build()
+  } else {
+    Locale.US
+  }
   val fmt = SimpleDateFormat("MMM", locale)
   for (month in 0..11) {
     val cal = Calendar.getInstance().apply {

@@ -3,4 +3,6 @@ SUPABASE_URL=https\://your-project.supabase.co
 SUPABASE_ANON_KEY=your-anon-key
 ADMIN_USERNAME=admin
 ADMIN_PASSWORD=change-this-admin-password
-
+CEREBRAS_API_URL=https\://api.cerebras.ai/v1/chat/completions
+CEREBRAS_API_KEY=your-cerebras-api-key
+CEREBRAS_MODEL=llama3.1-8b

@@ -24,6 +24,11 @@ fun requiredLocalProp(key: String): String {
   return value
 }
 
+fun optionalLocalProp(key: String, defaultValue: String): String {
+  val value = localProps.getProperty(key)?.trim().orEmpty()
+  return if (value.isBlank()) defaultValue else value
+}
+
 android {
   namespace = "com.solvix.tabungan"
   compileSdk = 36
@@ -38,10 +43,16 @@ android {
     val supabaseAnonKey = requiredLocalProp("SUPABASE_ANON_KEY")
     val adminUsername = requiredLocalProp("ADMIN_USERNAME")
     val adminPassword = requiredLocalProp("ADMIN_PASSWORD")
+    val cerebrasApiUrl = optionalLocalProp("CEREBRAS_API_URL", "https://api.cerebras.ai/v1/chat/completions")
+    val cerebrasApiKey = optionalLocalProp("CEREBRAS_API_KEY", "")
+    val cerebrasModel = optionalLocalProp("CEREBRAS_MODEL", "llama3.1-8b")
     buildConfigField("String", "SUPABASE_URL", quoted(supabaseUrl))
     buildConfigField("String", "SUPABASE_ANON_KEY", quoted(supabaseAnonKey))
     buildConfigField("String", "ADMIN_USERNAME", quoted(adminUsername))
     buildConfigField("String", "ADMIN_PASSWORD", quoted(adminPassword))
+    buildConfigField("String", "CEREBRAS_API_URL", quoted(cerebrasApiUrl))
+    buildConfigField("String", "CEREBRAS_API_KEY", quoted(cerebrasApiKey))
+    buildConfigField("String", "CEREBRAS_MODEL", quoted(cerebrasModel))
   }
 
   buildFeatures {
@@ -62,6 +73,20 @@ android {
   packaging {
     resources {
       excludes += "/META-INF/{AL2.0,LGPL2.1}"
+    }
+  }
+
+  buildTypes {
+    getByName("debug") {
+      isMinifyEnabled = false
+    }
+    getByName("release") {
+      isMinifyEnabled = true
+      isShrinkResources = true
+      proguardFiles(
+        getDefaultProguardFile("proguard-android-optimize.txt"),
+        "proguard-rules.pro",
+      )
     }
   }
 
@@ -90,7 +115,7 @@ dependencies {
   implementation("com.google.android.material:material:1.13.0")
   implementation("androidx.biometric:biometric:1.1.0")
   implementation("androidx.work:work-runtime-ktx:2.11.1")
-  implementation("androidx.security:security-crypto:1.1.0-alpha06")
+  implementation("androidx.security:security-crypto:1.1.0")
   implementation("io.github.jan-tennert.supabase:supabase-kt:2.4.1")
   implementation("io.github.jan-tennert.supabase:gotrue-kt:2.4.1")
   implementation("io.github.jan-tennert.supabase:postgrest-kt:2.4.1")
@@ -98,8 +123,8 @@ dependencies {
   implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
   coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.5")
   testImplementation("junit:junit:4.13.2")
-  androidTestImplementation("androidx.test.ext:junit:1.2.1")
-  androidTestImplementation("androidx.test.espresso:espresso-core:3.6.1")
+  androidTestImplementation("androidx.test.ext:junit:1.3.0")
+  androidTestImplementation("androidx.test.espresso:espresso-core:3.7.0")
   androidTestImplementation("androidx.compose.ui:ui-test-junit4")
 
   debugImplementation("androidx.compose.ui:ui-tooling")

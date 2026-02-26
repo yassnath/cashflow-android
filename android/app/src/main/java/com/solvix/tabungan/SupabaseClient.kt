@@ -72,3 +72,17 @@ data class SupabaseDreamEntry(
   @SerialName("source_type")
   val sourceType: String = "income",
 )
+
+@Serializable
+data class SupabaseInsightFeedback(
+  val id: String = "",
+  @SerialName("user_id")
+  val userId: String = "",
+  @SerialName("insight_id")
+  val insightId: String = "",
+  @SerialName("is_helpful")
+  val isHelpful: Boolean = false,
+  val reason: String = "",
+  @SerialName("created_at")
+  val createdAt: String = "",
+)

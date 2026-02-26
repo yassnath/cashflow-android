@@ -1,3 +1,5 @@
+@file:Suppress("DEPRECATION")
+
 package com.solvix.tabungan
 
 import android.content.Context
@@ -25,4 +27,3 @@ object SecurePrefs {
     }
   }
 }
-
