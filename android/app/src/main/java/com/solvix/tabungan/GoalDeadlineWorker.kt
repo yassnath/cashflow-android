@@ -49,8 +49,8 @@ class GoalDeadlineWorker(
         }
         .decodeList<SupabaseMoneyEntry>()
       val incomeTotal = moneyRows
-        .filter { it.type == EntryType.Income.name }
-        .sumOf { it.amount }
+        .filter { it.type.equals("Income", ignoreCase = true) || it.type.equals("income", ignoreCase = true) }
+        .sumOf { it.amountInt }
 
       val goals = SupabaseClient.client
         .from("dream_entries")
@@ -65,7 +65,8 @@ class GoalDeadlineWorker(
       val notifyDays = setOf(30L, 7L, 1L, 0L)
 
       goals.forEach { goal ->
-        if (goal.target <= 0) return@forEach
+        val targetVal = goal.targetInt
+        if (targetVal <= 0) return@forEach
         val deadline = parseDeadlineLocalDate(goal.deadline) ?: return@forEach
         val daysLeft = ChronoUnit.DAYS.between(today, deadline)
         if (daysLeft !in notifyDays) return@forEach
@@ -74,9 +75,9 @@ class GoalDeadlineWorker(
         val todayKey = today.toString()
         if (prefs.getString(markerKey, "") == todayKey) return@forEach
 
-        val clampedProgress = incomeTotal.coerceAtMost(goal.target)
-        val percent = if (goal.target > 0) {
-          ((clampedProgress.toFloat() / goal.target.toFloat()) * 100f).roundToInt()
+        val clampedProgress = incomeTotal.coerceAtMost(targetVal)
+        val percent = if (targetVal > 0) {
+          ((clampedProgress.toFloat() / targetVal.toFloat()) * 100f).roundToInt()
         } else {
           0
         }
@@ -85,7 +86,7 @@ class GoalDeadlineWorker(
           .replace("{title}", goal.title.ifBlank { strings["label_goal"] })
           .replace("{days}", dayLabel)
           .replace("{current}", formatRupiah(clampedProgress))
-          .replace("{target}", formatRupiah(goal.target))
+          .replace("{target}", formatRupiah(targetVal))
           .replace("{percent}", percent.toString())
 
         showNotification(

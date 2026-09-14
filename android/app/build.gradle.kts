@@ -29,6 +29,23 @@ fun optionalLocalProp(key: String, defaultValue: String): String {
   return if (value.isBlank()) defaultValue else value
 }
 
+fun optionalLocalPropOrEnv(key: String): String {
+  val localValue = localProps.getProperty(key)?.trim().orEmpty()
+  if (localValue.isNotBlank()) return localValue
+  return System.getenv(key)?.trim().orEmpty()
+}
+
+val releaseStoreFilePath = optionalLocalPropOrEnv("RELEASE_STORE_FILE").ifBlank { "../keystore/cashflow.jks" }
+val releaseStoreFile = rootProject.file(releaseStoreFilePath)
+val releaseStorePassword = optionalLocalPropOrEnv("RELEASE_STORE_PASSWORD")
+val releaseKeyAlias = optionalLocalPropOrEnv("RELEASE_KEY_ALIAS")
+val releaseKeyPassword = optionalLocalPropOrEnv("RELEASE_KEY_PASSWORD")
+val releaseSigningConfigured =
+  releaseStoreFile.exists() &&
+    releaseStorePassword.isNotBlank() &&
+    releaseKeyAlias.isNotBlank() &&
+    releaseKeyPassword.isNotBlank()
+
 android {
   namespace = "com.solvix.tabungan"
   compileSdk = 36
@@ -76,6 +93,15 @@ android {
     }
   }
 
+  signingConfigs {
+    create("release") {
+      storeFile = releaseStoreFile
+      storePassword = releaseStorePassword
+      keyAlias = releaseKeyAlias
+      keyPassword = releaseKeyPassword
+    }
+  }
+
   buildTypes {
     getByName("debug") {
       isMinifyEnabled = false
@@ -83,6 +109,11 @@ android {
     getByName("release") {
       isMinifyEnabled = true
       isShrinkResources = true
+      if (releaseSigningConfigured) {
+        signingConfig = signingConfigs.getByName("release")
+      } else {
+        signingConfig = signingConfigs.getByName("debug")
+      }
       proguardFiles(
         getDefaultProguardFile("proguard-android-optimize.txt"),
         "proguard-rules.pro",

@@ -18,3 +18,4 @@ local.properties
 **/.externalNativeBuild/
 android/app/release/
 *.apk
+.vscode/

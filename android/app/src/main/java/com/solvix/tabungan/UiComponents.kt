@@ -183,6 +183,52 @@ fun GhostButton(
 }
 
 @Composable
+fun OutlineButton(
+  text: String,
+  modifier: Modifier = Modifier,
+  fillMaxWidth: Boolean = true,
+  onClick: () -> Unit,
+) {
+  val colors = LocalAppColors.current
+  val baseModifier = if (fillMaxWidth) modifier.fillMaxWidth() else modifier
+  Box(
+    modifier = baseModifier
+      .heightIn(min = 40.dp)
+      .clip(RoundedCornerShape(12.dp))
+      .background(colors.card)
+      .border(1.5.dp, colors.accent, RoundedCornerShape(12.dp))
+      .clickable(onClick = onClick)
+      .padding(horizontal = 14.dp, vertical = 8.dp),
+    contentAlignment = Alignment.Center,
+  ) {
+    Text(text = text, color = colors.accent, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+  }
+}
+
+@Composable
+fun DangerButton(
+  text: String,
+  modifier: Modifier = Modifier,
+  fillMaxWidth: Boolean = true,
+  onClick: () -> Unit,
+) {
+  val colors = LocalAppColors.current
+  val baseModifier = if (fillMaxWidth) modifier.fillMaxWidth() else modifier
+  Box(
+    modifier = baseModifier
+      .heightIn(min = 40.dp)
+      .clip(RoundedCornerShape(12.dp))
+      .background(colors.danger.copy(alpha = 0.12f))
+      .border(1.dp, colors.danger.copy(alpha = 0.4f), RoundedCornerShape(12.dp))
+      .clickable(onClick = onClick)
+      .padding(horizontal = 14.dp, vertical = 8.dp),
+    contentAlignment = Alignment.Center,
+  ) {
+    Text(text = text, color = colors.danger, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+  }
+}
+
+@Composable
 fun ChipButton(
   text: String,
   modifier: Modifier = Modifier,

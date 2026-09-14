@@ -2,6 +2,7 @@ package com.solvix.tabungan
 
 data class ThemeIconSet(
   val app: String,
+  val dashboard: String,
   val income: String,
   val expense: String,
   val dreams: String,
@@ -19,6 +20,7 @@ data class ThemeIconSet(
 private val ThemeIconMap = mapOf(
   ThemeName.StandardLight to ThemeIconSet(
     app = "💰",
+    dashboard = "🏠",
     income = "📥",
     expense = "🧾",
     dreams = "🌟",
@@ -34,6 +36,7 @@ private val ThemeIconMap = mapOf(
   ),
   ThemeName.StandardDark to ThemeIconSet(
     app = "🌕",
+    dashboard = "🌐",
     income = "💹",
     expense = "💸",
     dreams = "🔮",
@@ -49,6 +52,7 @@ private val ThemeIconMap = mapOf(
   ),
   ThemeName.CartoonFood to ThemeIconSet(
     app = "🍩",
+    dashboard = "🍽️",
     income = "🍔",
     expense = "🍟",
     dreams = "🎂",
@@ -64,6 +68,7 @@ private val ThemeIconMap = mapOf(
   ),
   ThemeName.CartoonSpace to ThemeIconSet(
     app = "🌠",
+    dashboard = "🛸",
     income = "🚀",
     expense = "🌌",
     dreams = "🧑‍🚀",
@@ -79,6 +84,7 @@ private val ThemeIconMap = mapOf(
   ),
   ThemeName.CartoonMonster to ThemeIconSet(
     app = "👾",
+    dashboard = "🏰",
     income = "🧟",
     expense = "👹",
     dreams = "🎃",
@@ -94,6 +100,7 @@ private val ThemeIconMap = mapOf(
   ),
   ThemeName.CartoonHero to ThemeIconSet(
     app = "🦸",
+    dashboard = "🏟️",
     income = "🛡️",
     expense = "⚔️",
     dreams = "🏆",
@@ -109,6 +116,7 @@ private val ThemeIconMap = mapOf(
   ),
   ThemeName.CartoonSea to ThemeIconSet(
     app = "🐳",
+    dashboard = "🌊",
     income = "🐠",
     expense = "🐙",
     dreams = "🐬",
@@ -124,6 +132,7 @@ private val ThemeIconMap = mapOf(
   ),
   ThemeName.CartoonPlant to ThemeIconSet(
     app = "🌿",
+    dashboard = "🌿",
     income = "🌱",
     expense = "🍃",
     dreams = "🌼",
@@ -139,6 +148,7 @@ private val ThemeIconMap = mapOf(
   ),
   ThemeName.CartoonPinky to ThemeIconSet(
     app = "💖",
+    dashboard = "💖",
     income = "💗",
     expense = "💞",
     dreams = "💝",
@@ -154,6 +164,7 @@ private val ThemeIconMap = mapOf(
   ),
   ThemeName.CartoonColorful to ThemeIconSet(
     app = "🌈",
+    dashboard = "🎪",
     income = "🎈",
     expense = "🎨",
     dreams = "🎉",
@@ -177,6 +188,7 @@ fun themePageIcon(theme: ThemeName, page: Page): String {
   val set = ThemeIconMap[theme]
   if (set == null) return "📌"
   return when (page) {
+    Page.Dashboard -> set.dashboard
     Page.Income -> set.income
     Page.Expense -> set.expense
     Page.Dreams -> set.dreams

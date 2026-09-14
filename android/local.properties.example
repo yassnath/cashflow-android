@@ -6,3 +6,9 @@ ADMIN_PASSWORD=change-this-admin-password
 CEREBRAS_API_URL=https\://api.cerebras.ai/v1/chat/completions
 CEREBRAS_API_KEY=your-cerebras-api-key
 CEREBRAS_MODEL=llama3.1-8b
+
+# Release signing. You can also provide these as environment variables.
+RELEASE_STORE_FILE=../keystore/cashflow.jks
+RELEASE_STORE_PASSWORD=your-keystore-password
+RELEASE_KEY_ALIAS=your-key-alias
+RELEASE_KEY_PASSWORD=your-key-password

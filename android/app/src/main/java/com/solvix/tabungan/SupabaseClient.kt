@@ -47,7 +47,7 @@ data class SupabaseMoneyEntry(
   @SerialName("user_id")
   val userId: String = "",
   val type: String = "",
-  val amount: Int = 0,
+  val amount: Double = 0.0,
   val date: String = "",
   @SerialName("created_at")
   val createdAt: String = "",
@@ -57,7 +57,9 @@ data class SupabaseMoneyEntry(
   val sourceOrMethod: String = "",
   @SerialName("channel_bank")
   val channelOrBank: String = "",
-)
+) {
+  val amountInt: Int get() = amount.toInt()
+}
 
 @Serializable
 data class SupabaseDreamEntry(
@@ -65,13 +67,16 @@ data class SupabaseDreamEntry(
   @SerialName("user_id")
   val userId: String = "",
   val title: String = "",
-  val target: Int = 0,
-  val current: Int = 0,
+  val target: Double = 0.0,
+  val current: Double = 0.0,
   val deadline: String = "",
   val note: String = "",
   @SerialName("source_type")
   val sourceType: String = "income",
-)
+) {
+  val targetInt: Int get() = target.toInt()
+  val currentInt: Int get() = current.toInt()
+}
 
 @Serializable
 data class SupabaseInsightFeedback(
