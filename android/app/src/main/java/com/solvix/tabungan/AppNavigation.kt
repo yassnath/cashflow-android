@@ -159,6 +159,11 @@ fun TopBar(
             MenuItem(text = strings["admin_logout"], emoji = "🚪", color = colors.danger) { onLogout() }
           } else {
             MenuItem(
+              text = strings["menu_history"],
+              emoji = themePageIcon(theme, Page.History),
+              active = currentPage == Page.History,
+            ) { onNavigate(Page.History) }
+            MenuItem(
               text = strings["menu_theme"],
               emoji = themePageIcon(theme, Page.Themes),
               active = currentPage == Page.Themes,
