@@ -33,6 +33,7 @@ fun DashboardTopExpenseBars(
   strings: AppStrings,
 ) {
   val colors = LocalAppColors.current
+  val theme = LocalThemeName.current
   val targetExpenses = if (thisMonthExpenses.isNotEmpty()) thisMonthExpenses else allExpenseEntries
   val isCurrentMonthData = thisMonthExpenses.isNotEmpty()
 
@@ -44,7 +45,7 @@ fun DashboardTopExpenseBars(
         verticalAlignment = Alignment.CenterVertically,
       ) {
         SectionTitle(
-          icon = "🏷️",
+          icon = themeSectionVisualIcon(theme, "bar", "🏷️"),
           title = strings["dashboard_top_expenses"],
         )
         if (isCurrentMonthData) {

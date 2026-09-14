@@ -160,47 +160,47 @@ fun TopBar(
           } else {
             MenuItem(
               text = strings["menu_history"],
-              emoji = themePageIcon(theme, Page.History),
+              icon = themePageVisualIcon(theme, Page.History),
               active = currentPage == Page.History,
             ) { onNavigate(Page.History) }
             MenuItem(
               text = strings["menu_theme"],
-              emoji = themePageIcon(theme, Page.Themes),
+              icon = themePageVisualIcon(theme, Page.Themes),
               active = currentPage == Page.Themes,
             ) { onNavigate(Page.Themes) }
             MenuItem(
               text = strings["menu_insights"],
-              emoji = themePageIcon(theme, Page.Insights),
+              icon = themePageVisualIcon(theme, Page.Insights),
               active = currentPage == Page.Insights,
             ) { onNavigate(Page.Insights) }
             MenuItem(
               text = strings["menu_loans"],
-              emoji = themePageIcon(theme, Page.Loans),
+              icon = themePageVisualIcon(theme, Page.Loans),
               active = currentPage == Page.Loans,
             ) { onNavigate(Page.Loans) }
             MenuItem(
               text = strings["menu_ai_chat"],
-              emoji = themePageIcon(theme, Page.AIChat),
+              icon = themePageVisualIcon(theme, Page.AIChat),
               active = currentPage == Page.AIChat,
             ) { onNavigate(Page.AIChat) }
             MenuItem(
               text = strings["menu_calculator"],
-              emoji = themePageIcon(theme, Page.Calculator),
+              icon = themePageVisualIcon(theme, Page.Calculator),
               active = currentPage == Page.Calculator,
             ) { onNavigate(Page.Calculator) }
             MenuItem(
               text = strings["menu_report"],
-              emoji = themePageIcon(theme, Page.Report),
+              icon = themePageVisualIcon(theme, Page.Report),
               active = currentPage == Page.Report,
             ) { onNavigate(Page.Report) }
             MenuItem(
               text = strings["menu_profile"],
-              emoji = themePageIcon(theme, Page.Profile),
+              icon = themePageVisualIcon(theme, Page.Profile),
               active = currentPage == Page.Profile,
             ) { onNavigate(Page.Profile) }
             MenuItem(
               text = strings["menu_settings"],
-              emoji = themePageIcon(theme, Page.Settings),
+              icon = themePageVisualIcon(theme, Page.Settings),
               active = currentPage == Page.Settings,
             ) { onNavigate(Page.Settings) }
             MenuItem(text = strings["menu_logout"], emoji = "🚪", color = colors.danger) { onLogout() }
@@ -249,8 +249,12 @@ fun BottomNav(
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
       ) {
-        Text(text = themePageIcon(theme, item), fontSize = 26.sp, color = if (active) colors.text else colors.muted)
-        Spacer(modifier = Modifier.height(1.dp))
+        ThemedIconView(
+          icon = themePageVisualIcon(theme, item),
+          tint = if (active) colors.accent else colors.muted,
+          size = 26.dp,
+        )
+        Spacer(modifier = Modifier.height(3.dp))
         Text(
           text = pageLabel(item, strings),
           fontSize = 13.sp,

@@ -252,12 +252,84 @@ fun ChipButton(
 }
 
 @Composable
-fun SectionTitle(icon: String, title: String, subtitle: String? = null) {
+fun ThemedIconView(
+  icon: ThemedVisualIcon,
+  modifier: Modifier = Modifier,
+  tint: Color = LocalAppColors.current.text,
+  size: Dp = 22.dp,
+) {
+  when (icon) {
+    is ThemedVisualIcon.Vector -> {
+      Icon(
+        imageVector = icon.imageVector,
+        contentDescription = null,
+        tint = tint,
+        modifier = modifier.size(size),
+      )
+    }
+    is ThemedVisualIcon.ThemedBadge -> {
+      Text(
+        text = icon.symbol,
+        fontSize = (size.value * 0.95f).sp,
+        modifier = modifier,
+      )
+    }
+  }
+}
+
+@Composable
+fun ThemedBadgeIcon(
+  icon: ThemedVisualIcon,
+  modifier: Modifier = Modifier,
+  containerSize: Dp = 38.dp,
+  iconSize: Dp = 20.dp,
+  tint: Color = LocalAppColors.current.accent,
+  bgAlpha: Float = 0.12f,
+) {
+  val colors = LocalAppColors.current
+  Box(
+    modifier = modifier
+      .size(containerSize)
+      .clip(RoundedCornerShape(12.dp))
+      .background(colors.accent.copy(alpha = bgAlpha))
+      .border(1.dp, colors.accent.copy(alpha = 0.22f), RoundedCornerShape(12.dp)),
+    contentAlignment = Alignment.Center,
+  ) {
+    when (icon) {
+      is ThemedVisualIcon.Vector -> {
+        Icon(
+          imageVector = icon.imageVector,
+          contentDescription = null,
+          tint = tint,
+          modifier = Modifier.size(iconSize),
+        )
+      }
+      is ThemedVisualIcon.ThemedBadge -> {
+        Text(
+          text = icon.symbol,
+          fontSize = (iconSize.value * 1.15f).sp,
+        )
+      }
+    }
+  }
+}
+
+@Composable
+fun SectionTitle(
+  icon: ThemedVisualIcon,
+  title: String,
+  subtitle: String? = null,
+) {
   val colors = LocalAppColors.current
   Column {
     Row(verticalAlignment = Alignment.CenterVertically) {
-      Text(text = icon, fontSize = 20.sp)
-      Spacer(modifier = Modifier.width(6.dp))
+      ThemedBadgeIcon(
+        icon = icon,
+        containerSize = 38.dp,
+        iconSize = 20.dp,
+        tint = colors.accent,
+      )
+      Spacer(modifier = Modifier.width(10.dp))
       Text(text = title, style = MaterialTheme.typography.titleLarge, color = colors.text)
     }
     if (subtitle != null) {
@@ -265,13 +337,24 @@ fun SectionTitle(icon: String, title: String, subtitle: String? = null) {
         text = subtitle,
         color = colors.muted,
         fontSize = 13.sp,
-        modifier = Modifier.padding(top = 4.dp, bottom = 12.dp),
+        modifier = Modifier.padding(top = 6.dp, bottom = 12.dp),
       )
     } else {
       Spacer(modifier = Modifier.height(12.dp))
     }
   }
 }
+
+@Composable
+fun SectionTitle(
+  icon: String,
+  title: String,
+  subtitle: String? = null,
+) = SectionTitle(
+  icon = ThemedVisualIcon.ThemedBadge(icon),
+  title = title,
+  subtitle = subtitle,
+)
 
 @Composable
 fun AppTextField(
@@ -708,7 +791,7 @@ fun DropDownMenuCard(
 @Composable
 fun MenuItem(
   text: String,
-  emoji: String,
+  icon: ThemedVisualIcon,
   color: Color? = null,
   active: Boolean = false,
   onClick: () -> Unit,
@@ -733,14 +816,40 @@ fun MenuItem(
       .clip(RoundedCornerShape(12.dp))
       .then(bgModifier)
       .clickable(onClick = onClick)
-      .padding(10.dp),
+      .padding(horizontal = 10.dp, vertical = 8.dp),
     verticalAlignment = Alignment.CenterVertically,
   ) {
-    Text(text = emoji, fontSize = 18.sp)
-    Spacer(modifier = Modifier.width(8.dp))
-    Text(text = text, color = itemColor, fontWeight = FontWeight.SemiBold)
+    ThemedBadgeIcon(
+      icon = icon,
+      containerSize = 30.dp,
+      iconSize = 16.dp,
+      tint = if (active) Color.White else itemColor,
+      bgAlpha = if (active) 0.35f else 0.12f,
+    )
+    Spacer(modifier = Modifier.width(10.dp))
+    Text(
+      text = text,
+      fontWeight = FontWeight.SemiBold,
+      fontSize = 13.sp,
+      color = if (active) Color.White else itemColor,
+    )
   }
 }
+
+@Composable
+fun MenuItem(
+  text: String,
+  emoji: String,
+  color: Color? = null,
+  active: Boolean = false,
+  onClick: () -> Unit,
+) = MenuItem(
+  text = text,
+  icon = ThemedVisualIcon.ThemedBadge(emoji),
+  color = color,
+  active = active,
+  onClick = onClick,
+)
 
 @Composable
 fun ModalCard(

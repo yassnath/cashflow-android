@@ -65,7 +65,7 @@ fun SettingsPage(
     LaunchedEffect(language) {
       langIndex = if (language == AppLanguage.ID) 0 else 1
     }
-    SectionTitle(icon = themePageIcon(LocalThemeName.current, Page.Settings), title = strings["section_settings_title"], subtitle = strings["section_settings_subtitle"])
+    SectionTitle(icon = themePageVisualIcon(LocalThemeName.current, Page.Settings), title = strings["section_settings_title"], subtitle = strings["section_settings_subtitle"])
     AppCard {
       Text(text = strings["settings_security"], fontWeight = FontWeight.Bold, fontSize = 16.sp, color = colors.text)
       Spacer(modifier = Modifier.height(10.dp))

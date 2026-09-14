@@ -39,7 +39,7 @@ fun DashboardFlowDonutChart(
   AppCard {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
       SectionTitle(
-        icon = "📊",
+        icon = themeSectionVisualIcon(theme, "pie", "📊"),
         title = strings["dashboard_income_vs_expense"],
       )
 

@@ -60,7 +60,7 @@ fun ProfilePage(
   }
 
   Column {
-    SectionTitle(icon = themePageIcon(LocalThemeName.current, Page.Profile), title = strings["section_profile_title"], subtitle = strings["section_profile_subtitle"])
+    SectionTitle(icon = themePageVisualIcon(LocalThemeName.current, Page.Profile), title = strings["section_profile_title"], subtitle = strings["section_profile_subtitle"])
     AppCard {
       Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         ProfileLine(label = strings["label_name"], value = name.ifBlank { strings["guest"] })

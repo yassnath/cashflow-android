@@ -18,7 +18,7 @@ import com.solvix.tabungan.themePageIcon
 fun ThemesPage(currentTheme: ThemeName, onThemeSelected: (ThemeName) -> Unit) {
   val strings = LocalStrings.current
   Column {
-    SectionTitle(icon = themePageIcon(LocalThemeName.current, Page.Themes), title = strings["section_themes_title"], subtitle = strings["section_themes_subtitle"])
+    SectionTitle(icon = themePageVisualIcon(LocalThemeName.current, Page.Themes), title = strings["section_themes_title"], subtitle = strings["section_themes_subtitle"])
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
       ThemeCard(themeAppIcon(ThemeName.StandardLight), strings["theme_standard_light"], currentTheme == ThemeName.StandardLight, Color(0xFFFFF6E7)) {
         onThemeSelected(ThemeName.StandardLight)

@@ -1,4 +1,4 @@
-package com.solvix.tabungan.pages
+package com.solvix.tabungan
 
 import android.content.Context
 import android.content.Intent
@@ -109,7 +109,7 @@ fun ReportPage(
   }
 
   Column {
-    SectionTitle(icon = themePageIcon(LocalThemeName.current, Page.Report), title = strings["section_report_title"])
+    SectionTitle(icon = themePageVisualIcon(LocalThemeName.current, Page.Report), title = strings["section_report_title"])
     Box(
       modifier = Modifier
         .fillMaxWidth()

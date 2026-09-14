@@ -104,7 +104,7 @@ fun LoanTrackingPage(
 
   Column {
     SectionTitle(
-      icon = themePageIcon(LocalThemeName.current, Page.Loans),
+      icon = themePageVisualIcon(LocalThemeName.current, Page.Loans),
       title = strings["section_loans_title"],
       subtitle = strings["section_loans_subtitle"],
     )

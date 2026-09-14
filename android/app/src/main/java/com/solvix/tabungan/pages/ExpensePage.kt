@@ -68,7 +68,7 @@ fun ExpensePage(
   }
 
   Column {
-    SectionTitle(icon = themePageIcon(LocalThemeName.current, Page.Expense), title = strings["section_expense_title"], subtitle = strings["section_expense_subtitle"])
+    SectionTitle(icon = themePageVisualIcon(LocalThemeName.current, Page.Expense), title = strings["section_expense_title"], subtitle = strings["section_expense_subtitle"])
     AppCard {
       Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         AppTextField(

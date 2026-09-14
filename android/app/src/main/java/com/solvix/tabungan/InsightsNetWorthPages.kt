@@ -73,7 +73,7 @@ fun InsightsPage(
 
   Column {
     SectionTitle(
-      icon = themePageIcon(LocalThemeName.current, Page.Insights),
+      icon = themePageVisualIcon(LocalThemeName.current, Page.Insights),
       title = strings["section_insights_title"],
       subtitle = strings["section_insights_subtitle"],
     )

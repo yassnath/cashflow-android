@@ -44,7 +44,7 @@ fun DashboardLoanSummary(
         verticalAlignment = Alignment.CenterVertically,
       ) {
         SectionTitle(
-          icon = themePageIcon(theme, Page.Loans),
+          icon = themePageVisualIcon(theme, Page.Loans),
           title = strings["dashboard_active_loans"],
         )
         ChipButton(

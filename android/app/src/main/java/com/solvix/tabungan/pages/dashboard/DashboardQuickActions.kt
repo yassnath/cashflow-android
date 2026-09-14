@@ -46,28 +46,28 @@ fun DashboardQuickActions(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
       ) {
         QuickActionButton(
-          icon = themePageIcon(theme, Page.Income),
+          icon = themePageVisualIcon(theme, Page.Income),
           label = strings["dashboard_add_income"],
           modifier = Modifier.weight(1f),
           color = incomeColor,
           onClick = { onNavigateTo(Page.Income) },
         )
         QuickActionButton(
-          icon = themePageIcon(theme, Page.Expense),
+          icon = themePageVisualIcon(theme, Page.Expense),
           label = strings["dashboard_add_expense"],
           modifier = Modifier.weight(1f),
           color = expenseColor,
           onClick = { onNavigateTo(Page.Expense) },
         )
         QuickActionButton(
-          icon = themePageIcon(theme, Page.Dreams),
+          icon = themePageVisualIcon(theme, Page.Dreams),
           label = strings["page_dreams"],
           modifier = Modifier.weight(1f),
           color = colors.accent,
           onClick = { onNavigateTo(Page.Dreams) },
         )
         QuickActionButton(
-          icon = themePageIcon(theme, Page.AIChat),
+          icon = themePageVisualIcon(theme, Page.AIChat),
           label = strings["menu_ai_chat"],
           modifier = Modifier.weight(1f),
           color = colors.accent2,
@@ -80,7 +80,7 @@ fun DashboardQuickActions(
 
 @Composable
 private fun QuickActionButton(
-  icon: String,
+  icon: ThemedVisualIcon,
   label: String,
   modifier: Modifier = Modifier,
   color: Color,
@@ -93,14 +93,20 @@ private fun QuickActionButton(
       .clip(RoundedCornerShape(AppDimens.radiusSm))
       .background(color.copy(alpha = 0.12f))
       .clickable(onClick = onClick)
-      .padding(vertical = 12.dp, horizontal = 4.dp),
+      .padding(vertical = 10.dp, horizontal = 4.dp),
     contentAlignment = Alignment.Center,
   ) {
     Column(
       horizontalAlignment = Alignment.CenterHorizontally,
-      verticalArrangement = Arrangement.spacedBy(4.dp),
+      verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
-      Text(text = icon, fontSize = 20.sp)
+      ThemedBadgeIcon(
+        icon = icon,
+        containerSize = 32.dp,
+        iconSize = 18.dp,
+        tint = color,
+        bgAlpha = 0.22f,
+      )
       Text(
         text = label,
         fontSize = 10.sp,

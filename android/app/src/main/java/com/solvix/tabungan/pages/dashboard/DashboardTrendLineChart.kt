@@ -27,6 +27,7 @@ fun DashboardTrendLineChart(
   strings: AppStrings,
 ) {
   val colors = LocalAppColors.current
+  val theme = LocalThemeName.current
 
   AppCard {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -36,7 +37,7 @@ fun DashboardTrendLineChart(
         verticalAlignment = Alignment.CenterVertically,
       ) {
         SectionTitle(
-          icon = "📈",
+          icon = themeSectionVisualIcon(theme, "trend", "📈"),
           title = strings["dashboard_monthly_trend"],
         )
         // Legend indicators

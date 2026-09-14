@@ -54,7 +54,7 @@ fun CalculatorPage() {
   val strings = LocalStrings.current
   val colors = LocalAppColors.current
   Column {
-    SectionTitle(icon = themePageIcon(LocalThemeName.current, Page.Calculator), title = strings["calculator_title"], subtitle = strings["calculator_subtitle"])
+    SectionTitle(icon = themePageVisualIcon(LocalThemeName.current, Page.Calculator), title = strings["calculator_title"], subtitle = strings["calculator_subtitle"])
     AppCard {
       Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Box(

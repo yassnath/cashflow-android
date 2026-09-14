@@ -79,7 +79,7 @@ fun DreamsPage(
   }
 
   Column {
-    SectionTitle(icon = themePageIcon(LocalThemeName.current, Page.Dreams), title = strings["section_dreams_title"], subtitle = strings["section_dreams_subtitle"])
+    SectionTitle(icon = themePageVisualIcon(LocalThemeName.current, Page.Dreams), title = strings["section_dreams_title"], subtitle = strings["section_dreams_subtitle"])
     if (!goalReachSourceType.isNullOrBlank()) {
       GoalReachedPopup(
         sourceType = goalReachSourceType,

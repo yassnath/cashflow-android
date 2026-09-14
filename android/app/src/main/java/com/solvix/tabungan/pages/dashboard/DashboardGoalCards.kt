@@ -42,7 +42,7 @@ fun DashboardGoalCards(
         verticalAlignment = Alignment.CenterVertically,
       ) {
         SectionTitle(
-          icon = themePageIcon(theme, Page.Dreams),
+          icon = themePageVisualIcon(theme, Page.Dreams),
           title = strings["dashboard_goal_progress"],
         )
         ChipButton(

@@ -1,4 +1,4 @@
-package com.solvix.tabungan.pages
+package com.solvix.tabungan
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -112,7 +112,7 @@ fun HistoryPage(
   val expenseTotal = dateFiltered.filter { it.type == EntryType.Expense }.sumOf { it.amount }
 
   Column {
-    SectionTitle(icon = themePageIcon(LocalThemeName.current, Page.History), title = strings["section_history_title"], subtitle = strings["section_history_subtitle"])
+    SectionTitle(icon = themePageVisualIcon(LocalThemeName.current, Page.History), title = strings["section_history_title"], subtitle = strings["section_history_subtitle"])
 
     AppCard {
       Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {

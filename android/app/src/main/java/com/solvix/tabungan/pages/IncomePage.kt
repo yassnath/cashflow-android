@@ -68,7 +68,7 @@ fun IncomePage(
   }
 
   Column {
-    SectionTitle(icon = themePageIcon(LocalThemeName.current, Page.Income), title = strings["section_income_title"], subtitle = strings["section_income_subtitle"])
+    SectionTitle(icon = themePageVisualIcon(LocalThemeName.current, Page.Income), title = strings["section_income_title"], subtitle = strings["section_income_subtitle"])
     AppCard {
       Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         AppTextField(

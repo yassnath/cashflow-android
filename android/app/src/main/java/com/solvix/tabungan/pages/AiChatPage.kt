@@ -60,7 +60,7 @@ fun AiChatPage(
 
   Column {
     SectionTitle(
-      icon = themePageIcon(LocalThemeName.current, Page.AIChat),
+      icon = themePageVisualIcon(LocalThemeName.current, Page.AIChat),
       title = strings["section_ai_chat_title"],
       subtitle = strings["section_ai_chat_subtitle"],
     )
