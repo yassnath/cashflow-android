@@ -9,9 +9,14 @@ plugins {
 }
 
 val localProps = Properties().apply {
-  val localFile = rootProject.file("local.properties")
-  if (localFile.exists()) {
-    localFile.inputStream().use { load(it) }
+  listOf(
+    rootProject.file("local.properties"),
+    file("../local.properties"),
+    file("../../local.properties"),
+  ).forEach { f ->
+    if (f.exists()) {
+      f.inputStream().use { load(it) }
+    }
   }
 }
 
@@ -36,7 +41,12 @@ fun optionalLocalPropOrEnv(key: String): String {
 }
 
 val releaseStoreFilePath = optionalLocalPropOrEnv("RELEASE_STORE_FILE").ifBlank { "../keystore/cashflow.jks" }
-val releaseStoreFile = rootProject.file(releaseStoreFilePath)
+val releaseStoreFile = listOf(
+  rootProject.file(releaseStoreFilePath),
+  rootProject.file("keystore/cashflow.jks"),
+  file("../keystore/cashflow.jks"),
+  file("../../keystore/cashflow.jks"),
+).firstOrNull { it.exists() } ?: rootProject.file(releaseStoreFilePath)
 val releaseStorePassword = optionalLocalPropOrEnv("RELEASE_STORE_PASSWORD")
 val releaseKeyAlias = optionalLocalPropOrEnv("RELEASE_KEY_ALIAS")
 val releaseKeyPassword = optionalLocalPropOrEnv("RELEASE_KEY_PASSWORD")

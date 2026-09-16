@@ -6,6 +6,9 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.platform.LocalContext
+import com.solvix.tabungan.pages.settings.FullAppBackup
+import com.solvix.tabungan.pages.settings.FullBackupHelper
+import com.solvix.tabungan.pages.transfer.TransferPage
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -25,6 +28,7 @@ fun AppPageContent(
   // â”€â”€ Entry data â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   incomeEntries: androidx.compose.runtime.snapshots.SnapshotStateList<MoneyEntry>,
   expenseEntries: androidx.compose.runtime.snapshots.SnapshotStateList<MoneyEntry>,
+  transferEntries: androidx.compose.runtime.snapshots.SnapshotStateList<MoneyEntry> = androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateListOf() },
   dreamEntries: androidx.compose.runtime.snapshots.SnapshotStateList<DreamEntry>,
   loanEntries: androidx.compose.runtime.snapshots.SnapshotStateList<LoanEntry>,
   cachedInsights: androidx.compose.runtime.snapshots.SnapshotStateList<InsightItem>,
@@ -47,6 +51,7 @@ fun AppPageContent(
   onRefreshInsights: suspend (userId: String, timeframe: InsightTimeframe, forceAi: Boolean) -> Unit,
   onRequestConfirm: (message: String, action: () -> Unit) -> Unit,
   onAlert: (String) -> Unit,
+  onToast: (String) -> Unit = onAlert,
   onNavigateTo: (Page) -> Unit,
   onPendingEditConsumed: () -> Unit,
   onGoalReachDismiss: () -> Unit,
@@ -70,7 +75,8 @@ fun AppPageContent(
   // Report
   resolveStartYear: () -> Int,
 ) {
-  // â”€â”€ Hero summary (shown on pages that declare showHero) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // Hero summary (shown on pages that declare showHero)
+  val context = LocalContext.current
   if (currentPage.showHero()) {
     val filtered = filterByRange(incomeEntries + expenseEntries, summaryRange)
     val incomeTotal = filtered.filter { it.type == EntryType.Income }.sumOf { it.amount }
@@ -85,6 +91,12 @@ fun AppPageContent(
   }
 
   // â”€â”€ Per-page routing â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  fun persistLocalCache() {
+    if (activeUserId.isNotBlank()) {
+      LocalDataCache.save(context, activeUserId, incomeEntries, expenseEntries, dreamEntries, transferEntries)
+    }
+  }
+
   when (currentPage) {
     Page.Dashboard -> DashboardPage(
       incomeEntries = incomeEntries,
@@ -95,12 +107,15 @@ fun AppPageContent(
       currentLang = currentLang,
       strings = strings,
       onNavigateTo = onNavigateTo,
+      transferEntries = transferEntries,
     )
 
     Page.Income -> IncomePage(
       onSave = { entry ->
         incomeEntries.add(entry)
         onUpdateGoalMilestones()
+        persistLocalCache()
+        HapticHelper.vibrateSuccess(context)
         if (activeUserId.isNotBlank()) {
           scope.launch(Dispatchers.IO) {
             SupabaseRepository.insertMoneyEntry(activeUserId, entry)
@@ -112,6 +127,8 @@ fun AppPageContent(
         val i = incomeEntries.indexOfFirst { it.id == entry.id }
         if (i >= 0) incomeEntries[i] = entry
         onUpdateGoalMilestones()
+        persistLocalCache()
+        HapticHelper.vibrateSuccess(context)
         if (activeUserId.isNotBlank()) {
           scope.launch(Dispatchers.IO) {
             SupabaseRepository.updateMoneyEntry(entry)
@@ -128,6 +145,8 @@ fun AppPageContent(
       onSave = { entry ->
         expenseEntries.add(entry)
         onUpdateGoalMilestones()
+        persistLocalCache()
+        HapticHelper.vibrateSuccess(context)
         if (activeUserId.isNotBlank()) {
           scope.launch(Dispatchers.IO) {
             SupabaseRepository.insertMoneyEntry(activeUserId, entry)
@@ -139,10 +158,54 @@ fun AppPageContent(
         val i = expenseEntries.indexOfFirst { it.id == entry.id }
         if (i >= 0) expenseEntries[i] = entry
         onUpdateGoalMilestones()
+        persistLocalCache()
+        HapticHelper.vibrateSuccess(context)
         if (activeUserId.isNotBlank()) {
           scope.launch(Dispatchers.IO) {
             SupabaseRepository.updateMoneyEntry(entry)
             onRefreshInsights(activeUserId, insightsTimeframe, false)
+          }
+        }
+      },
+      editEntry = pendingEdit,
+      onEditConsumed = onPendingEditConsumed,
+      strings = strings,
+      existingExpenses = expenseEntries,
+      onBudgetWarning = { warning -> onToast(warning) },
+      onEntriesGenerated = { generatedList ->
+        generatedList.forEach { entry ->
+          if (entry.type == EntryType.Income) {
+            incomeEntries.add(entry)
+          } else {
+            expenseEntries.add(entry)
+          }
+          if (activeUserId.isNotBlank()) {
+            scope.launch(Dispatchers.IO) {
+              SupabaseRepository.insertMoneyEntry(activeUserId, entry)
+            }
+          }
+        }
+        onUpdateGoalMilestones()
+      },
+    )
+
+    Page.Transfer -> TransferPage(
+      onSave = { entry ->
+        transferEntries.add(entry)
+        persistLocalCache()
+        if (activeUserId.isNotBlank()) {
+          scope.launch(Dispatchers.IO) {
+            SupabaseRepository.insertMoneyEntry(activeUserId, entry)
+          }
+        }
+      },
+      onUpdate = { entry ->
+        val i = transferEntries.indexOfFirst { it.id == entry.id }
+        if (i >= 0) transferEntries[i] = entry
+        persistLocalCache()
+        if (activeUserId.isNotBlank()) {
+          scope.launch(Dispatchers.IO) {
+            SupabaseRepository.updateMoneyEntry(entry)
           }
         }
       },
@@ -160,6 +223,7 @@ fun AppPageContent(
       onSave = { entry ->
         dreamEntries.add(entry)
         onUpdateGoalMilestones()
+        persistLocalCache()
         if (activeUserId.isNotBlank()) {
           scope.launch(Dispatchers.IO) {
             SupabaseRepository.insertDreamEntry(activeUserId, entry)
@@ -171,6 +235,7 @@ fun AppPageContent(
         val i = dreamEntries.indexOfFirst { it.id == entry.id }
         if (i >= 0) dreamEntries[i] = entry
         onUpdateGoalMilestones()
+        persistLocalCache()
         if (activeUserId.isNotBlank()) {
           scope.launch(Dispatchers.IO) {
             SupabaseRepository.updateDreamEntry(entry)
@@ -182,6 +247,7 @@ fun AppPageContent(
         onRequestConfirm(strings["confirm_delete_dream"]) {
           dreamEntries.removeAll { it.id == entry.id }
           onUpdateGoalMilestones()
+          persistLocalCache()
           if (activeUserId.isNotBlank()) {
             scope.launch(Dispatchers.IO) {
               SupabaseRepository.deleteDreamEntry(entry.id)
@@ -196,19 +262,31 @@ fun AppPageContent(
     )
 
     Page.History -> HistoryPage(
-      entries = incomeEntries + expenseEntries,
+      entries = incomeEntries + expenseEntries + transferEntries,
       strings = strings,
       onEdit = { entry ->
-        onNavigateTo(if (entry.type == EntryType.Income) Page.Income else Page.Expense)
+        onNavigateTo(
+          when (entry.type) {
+            EntryType.Income -> Page.Income
+            EntryType.Expense -> Page.Expense
+            EntryType.Transfer -> Page.Transfer
+          }
+        )
       },
       onDelete = { entry ->
-        val key = if (entry.type == EntryType.Income) "confirm_delete_income" else "confirm_delete_expense"
+        val key = when (entry.type) {
+          EntryType.Income -> "confirm_delete_income"
+          EntryType.Expense -> "confirm_delete_expense"
+          EntryType.Transfer -> "confirm_delete_expense"
+        }
         onRequestConfirm(strings[key]) {
           when (entry.type) {
             EntryType.Income -> incomeEntries.removeAll { it.id == entry.id }
             EntryType.Expense -> expenseEntries.removeAll { it.id == entry.id }
+            EntryType.Transfer -> transferEntries.removeAll { it.id == entry.id }
           }
           onUpdateGoalMilestones()
+          persistLocalCache()
           if (activeUserId.isNotBlank()) {
             scope.launch(Dispatchers.IO) {
               SupabaseRepository.deleteMoneyEntry(entry.id)
@@ -216,6 +294,28 @@ fun AppPageContent(
             }
           }
         }
+      },
+      onImportEntries = { importedEntries ->
+        importedEntries.forEach { entry ->
+          when (entry.type) {
+            EntryType.Income -> incomeEntries.add(entry)
+            EntryType.Expense -> expenseEntries.add(entry)
+            EntryType.Transfer -> transferEntries.add(entry)
+          }
+          if (activeUserId.isNotBlank()) {
+            scope.launch(Dispatchers.IO) {
+              SupabaseRepository.insertMoneyEntry(activeUserId, entry)
+            }
+          }
+        }
+        onUpdateGoalMilestones()
+        persistLocalCache()
+        if (activeUserId.isNotBlank()) {
+          scope.launch(Dispatchers.IO) {
+            onRefreshInsights(activeUserId, insightsTimeframe, false)
+          }
+        }
+        onToast("Berhasil mengimpor ${importedEntries.size} transaksi!")
       },
     )
 
@@ -330,6 +430,47 @@ fun AppPageContent(
       onChangePassword = onChangePassword,
       canDeleteAccount = currentUser?.id?.isNotBlank() == true,
       onDeleteAccount = onDeleteAccount,
+      onExportBackup = {
+        val backup = FullAppBackup(
+          userId = activeUserId,
+          income = incomeEntries.toList(),
+          expense = expenseEntries.toList(),
+          transfers = transferEntries.toList(),
+          dreams = dreamEntries.toList(),
+          loans = loanEntries.toList(),
+          categoryBudgets = CategoryBudgetManager.loadBudgets(context),
+        )
+        FullBackupHelper.shareBackup(context, backup)
+      },
+      onRestoreBackup = { backup ->
+        incomeEntries.clear()
+        incomeEntries.addAll(backup.income)
+        expenseEntries.clear()
+        expenseEntries.addAll(backup.expense)
+        transferEntries.clear()
+        transferEntries.addAll(backup.transfers)
+        dreamEntries.clear()
+        dreamEntries.addAll(backup.dreams)
+        loanEntries.clear()
+        loanEntries.addAll(backup.loans)
+        backup.categoryBudgets.forEach { (cat, limit) ->
+          CategoryBudgetManager.saveBudget(context, cat, limit)
+        }
+        onUpdateGoalMilestones()
+        onPersistLoanEntries(activeUserId)
+        persistLocalCache()
+        HapticHelper.vibrateSuccess(context)
+        if (activeUserId.isNotBlank()) {
+          scope.launch(Dispatchers.IO) {
+            backup.income.forEach { SupabaseRepository.insertMoneyEntry(activeUserId, it) }
+            backup.expense.forEach { SupabaseRepository.insertMoneyEntry(activeUserId, it) }
+            backup.transfers.forEach { SupabaseRepository.insertMoneyEntry(activeUserId, it) }
+            backup.dreams.forEach { SupabaseRepository.insertDreamEntry(activeUserId, it) }
+            onRefreshInsights(activeUserId, insightsTimeframe, false)
+          }
+        }
+      },
+      onToast = onToast,
     )
 
     Page.Themes -> ThemesPage(currentTheme) { selected ->

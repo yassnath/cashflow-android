@@ -50,6 +50,7 @@ fun TabunganAppShell(state: TabunganAppState) {
     currentUser = state.currentUser,
     incomeEntries = state.incomeEntries,
     expenseEntries = state.expenseEntries,
+    transferEntries = state.transferEntries,
     dreamEntries = state.dreamEntries,
     loanEntries = state.loanEntries,
     cachedInsights = state.cachedInsights,
@@ -62,7 +63,7 @@ fun TabunganAppShell(state: TabunganAppState) {
     pageFadeSeed = state.pageFadeSeed,
     scope = state.scope,
     onNavigateTo = { page ->
-      state.pendingEdit = if (page == Page.Income || page == Page.Expense) state.pendingEdit else null
+      state.pendingEdit = if (page == Page.Income || page == Page.Expense || page == Page.Transfer) state.pendingEdit else null
       state.navigateTo(page)
     },
     onShowProfileMenuChange = { state.showProfileMenu = it },

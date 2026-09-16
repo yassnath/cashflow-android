@@ -19,5 +19,6 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "Tabunganku by Solvix Studio"
+rootProject.name = "TabunganAndroid"
 include(":app")
+project(":app").projectDir = file("android/app")

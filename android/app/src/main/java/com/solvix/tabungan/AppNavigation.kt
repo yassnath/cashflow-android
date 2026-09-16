@@ -25,6 +25,11 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.AccountBalanceWallet
+import androidx.compose.material.icons.rounded.KeyboardArrowDown
+import androidx.compose.material.icons.rounded.Person
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -55,6 +60,7 @@ enum class Page(val label: String, val icon: String) {
   Dashboard("Dashboard", "🏠"),
   Income("Pemasukkan", "💸"),
   Expense("Pengeluaran", "🧾"),
+  Transfer("Transfer", "🔁"),
   Dreams("Target", "🌟"),
   History("History", "📒"),
   Insights("Insights", "🧠"),
@@ -85,6 +91,7 @@ fun TopBar(
 ) {
   val colors = LocalAppColors.current
   var menuAnchorBounds by remember { mutableStateOf(IntRect.Zero) }
+  val isDark = isDarkTheme(theme)
   Row(
     modifier = Modifier
       .fillMaxWidth()
@@ -95,13 +102,26 @@ fun TopBar(
     Row(verticalAlignment = Alignment.CenterVertically) {
       Box(
         modifier = Modifier
-          .size(52.dp)
+          .size(50.dp)
           .clip(RoundedCornerShape(16.dp))
-          .background(colors.card)
-          .shadow(10.dp, RoundedCornerShape(16.dp)),
+          .background(if (isDark) colors.card else Color.White)
+          .border(
+            width = 1.dp,
+            color = if (isDark) colors.cardBorder else colors.accent.copy(alpha = 0.25f),
+            shape = RoundedCornerShape(16.dp),
+          ),
         contentAlignment = Alignment.Center,
       ) {
-        Text(text = themeAppIcon(theme), fontSize = 26.sp)
+        if (theme == ThemeName.StandardLight || theme == ThemeName.StandardDark) {
+          Icon(
+            imageVector = Icons.Rounded.AccountBalanceWallet,
+            contentDescription = null,
+            tint = colors.accent,
+            modifier = Modifier.size(26.dp),
+          )
+        } else {
+          Text(text = themeAppIcon(theme), fontSize = 26.sp)
+        }
       }
       Spacer(modifier = Modifier.width(12.dp))
       Column {
@@ -111,19 +131,47 @@ fun TopBar(
     }
 
     Box {
-      ChipButton(
-        text = if (displayUsername.isBlank()) strings["guest"] else displayUsername,
-        modifier = Modifier.onGloballyPositioned { coordinates ->
-          val rect = coordinates.boundsInWindow()
-          menuAnchorBounds = IntRect(
-            rect.left.roundToInt(),
-            rect.top.roundToInt(),
-            rect.right.roundToInt(),
-            rect.bottom.roundToInt(),
+      Row(
+        modifier = Modifier
+          .clip(RoundedCornerShape(999.dp))
+          .background(colors.accent.copy(alpha = 0.12f))
+          .border(1.dp, colors.accent.copy(alpha = 0.45f), RoundedCornerShape(999.dp))
+          .clickable(onClick = onProfileClick)
+          .padding(horizontal = 12.dp, vertical = 7.dp)
+          .onGloballyPositioned { coordinates ->
+            val rect = coordinates.boundsInWindow()
+            menuAnchorBounds = IntRect(
+              rect.left.roundToInt(),
+              rect.top.roundToInt(),
+              rect.right.roundToInt(),
+              rect.bottom.roundToInt(),
+            )
+          },
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(5.dp),
+      ) {
+        if (theme == ThemeName.StandardLight || theme == ThemeName.StandardDark) {
+          Icon(
+            imageVector = Icons.Rounded.Person,
+            contentDescription = null,
+            tint = colors.accent,
+            modifier = Modifier.size(17.dp),
           )
-        },
-        onClick = onProfileClick,
-      )
+        }
+        Text(
+          text = if (displayUsername.isBlank()) strings["guest"] else displayUsername,
+          fontWeight = FontWeight.Bold,
+          fontSize = 13.sp,
+          color = colors.text,
+          maxLines = 1,
+        )
+        Icon(
+          imageVector = Icons.Rounded.KeyboardArrowDown,
+          contentDescription = null,
+          tint = colors.accent,
+          modifier = Modifier.size(16.dp),
+        )
+      }
       DropDownMenuCard(
         expanded = showMenu,
         onDismiss = onDismissMenu,
@@ -156,8 +204,17 @@ fun TopBar(
             }
           }
           if (isAdmin) {
-            MenuItem(text = strings["admin_logout"], emoji = "🚪", color = colors.danger) { onLogout() }
+            MenuItem(
+              text = strings["admin_logout"],
+              icon = themeSectionVisualIcon(theme, "logout", "🚪"),
+              color = colors.danger,
+            ) { onLogout() }
           } else {
+            MenuItem(
+              text = "Transfer Saldo",
+              icon = themePageVisualIcon(theme, Page.Transfer),
+              active = currentPage == Page.Transfer,
+            ) { onNavigate(Page.Transfer) }
             MenuItem(
               text = strings["menu_history"],
               icon = themePageVisualIcon(theme, Page.History),
@@ -203,7 +260,11 @@ fun TopBar(
               icon = themePageVisualIcon(theme, Page.Settings),
               active = currentPage == Page.Settings,
             ) { onNavigate(Page.Settings) }
-            MenuItem(text = strings["menu_logout"], emoji = "🚪", color = colors.danger) { onLogout() }
+            MenuItem(
+              text = strings["menu_logout"],
+              icon = themeSectionVisualIcon(theme, "logout", "🚪"),
+              color = colors.danger,
+            ) { onLogout() }
           }
         }
       }
@@ -389,6 +450,7 @@ fun pageLabel(page: Page, strings: AppStrings): String {
     Page.Dashboard -> strings["page_dashboard"]
     Page.Income -> strings["page_income"]
     Page.Expense -> strings["page_expense"]
+    Page.Transfer -> "Transfer Saldo"
     Page.Dreams -> strings["page_dreams"]
     Page.History -> strings["page_history"]
     Page.Insights -> strings["page_insights"]

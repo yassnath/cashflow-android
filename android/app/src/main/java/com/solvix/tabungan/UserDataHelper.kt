@@ -29,19 +29,67 @@ suspend fun loadUserData(
   context: Context,
   onGoalReachEvent: (GoalReachEvent) -> Unit,
   onToast: (String) -> Unit,
+  transferEntries: SnapshotStateList<MoneyEntry>? = null,
 ) {
   if (userId.isBlank()) return
-  val loaded = fetchUserData(userId, authId)
+
+  // 1. Muat segera dari cache lokal agar instan & 100% offline-ready
+  val cached = LocalDataCache.load(context, userId)
+  if (cached != null && (cached.income.isNotEmpty() || cached.expense.isNotEmpty() || cached.transfers.isNotEmpty() || cached.dreams.isNotEmpty())) {
+    withContext(Dispatchers.Main) {
+      incomeEntries.clear()
+      incomeEntries.addAll(cached.income)
+      expenseEntries.clear()
+      expenseEntries.addAll(cached.expense)
+      transferEntries?.clear()
+      transferEntries?.addAll(cached.transfers)
+      dreamEntries.clear()
+      dreamEntries.addAll(cached.dreams)
+      updateGoalMilestones(
+        incomeEntries = incomeEntries,
+        expenseEntries = expenseEntries,
+        dreamEntries = dreamEntries,
+        achievedGoalIds = achievedGoalIds,
+        lastIncomeTotal = 0,
+        lastExpenseTotal = 0,
+        lastBalanceTotal = 0,
+        strings = strings,
+        context = context,
+        notify = false,
+        onTotalsUpdate = { _, _, _ -> },
+        onGoalReachEvent = onGoalReachEvent,
+        onToast = onToast,
+      )
+    }
+  }
+
+  // 2. Muat dari Supabase secara sinkronisasi latar
+  val loadedResult = runCatching { fetchUserData(userId, authId) }
+  val loaded = loadedResult.getOrNull() ?: return
+
   if (loaded.pendingDateUpdates.isNotEmpty()) {
     loaded.pendingDateUpdates.distinctBy { it.first }.forEach { (id, date) ->
       runCatching { SupabaseRepository.updateMoneyEntryDate(id, date) }
     }
   }
+
+  // 3. Perbarui cache lokal dengan data server terbaru
+  LocalDataCache.save(
+    context = context,
+    userId = userId,
+    income = loaded.income,
+    expense = loaded.expense,
+    dreams = loaded.dreams,
+    transfers = loaded.transfer,
+  )
+
   withContext(Dispatchers.Main) {
     incomeEntries.clear()
     incomeEntries.addAll(loaded.income)
     expenseEntries.clear()
     expenseEntries.addAll(loaded.expense)
+    transferEntries?.clear()
+    transferEntries?.addAll(loaded.transfer)
     dreamEntries.clear()
     dreamEntries.addAll(loaded.dreams)
     updateGoalMilestones(

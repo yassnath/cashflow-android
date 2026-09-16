@@ -8,9 +8,11 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -44,7 +46,10 @@ fun DashboardGoalCards(
         SectionTitle(
           icon = themePageVisualIcon(theme, Page.Dreams),
           title = strings["dashboard_goal_progress"],
+          modifier = Modifier.weight(1f, fill = false),
+          compact = true,
         )
+        Spacer(modifier = Modifier.width(6.dp))
         ChipButton(
           text = strings["dashboard_see_all"],
           onClick = { onNavigateTo(Page.Dreams) },
@@ -67,6 +72,7 @@ fun DashboardGoalCards(
             val targetSafe = goal.target.coerceAtLeast(1)
             val ratio = (goal.current.toFloat() / targetSafe).coerceIn(0f, 1f)
             val percent = (ratio * 100).roundToInt()
+            val animatedPercent = rememberAnimatedAmount(percent)
             val animatedGoalRatio by animateFloatAsState(
               targetValue = ratio,
               animationSpec = tween(durationMillis = 650 + index * 100, easing = FastOutSlowInEasing),
@@ -96,7 +102,7 @@ fun DashboardGoalCards(
                     modifier = Modifier.weight(1f),
                   )
                   Text(
-                    text = "$percent%",
+                    text = "$animatedPercent%",
                     fontWeight = FontWeight.Bold,
                     fontSize = 13.sp,
                     color = colors.accent,
@@ -128,13 +134,13 @@ fun DashboardGoalCards(
                   modifier = Modifier.fillMaxWidth(),
                   horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
-                  Text(
-                    text = formatRupiah(goal.current),
+                  AnimatedAmountText(
+                    amount = goal.current,
                     fontSize = 11.sp,
                     color = colors.muted,
                   )
-                  Text(
-                    text = formatRupiah(goal.target),
+                  AnimatedAmountText(
+                    amount = goal.target,
                     fontSize = 11.sp,
                     fontWeight = FontWeight.SemiBold,
                     color = colors.text,

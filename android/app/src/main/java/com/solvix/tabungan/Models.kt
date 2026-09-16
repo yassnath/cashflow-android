@@ -13,8 +13,10 @@ import java.util.TimeZone
 import kotlinx.serialization.Serializable
 import kotlin.math.roundToInt
 
-enum class EntryType { Income, Expense }
+@Serializable
+enum class EntryType { Income, Expense, Transfer }
 
+@Serializable
 data class MoneyEntry(
   val id: String = UUID.randomUUID().toString(),
   val type: EntryType,
@@ -25,8 +27,10 @@ data class MoneyEntry(
   val sourceOrMethod: String,
   val channelOrBank: String,
   val createdAt: String = "",
+  val receiptUri: String = "",
 )
 
+@Serializable
 data class DreamEntry(
   val id: String = UUID.randomUUID().toString(),
   val title: String,
@@ -49,6 +53,7 @@ data class LoanEntry(
   val dueDate: String,
   val note: String,
   val linkedExpenseId: String? = null,
+  val isReceivable: Boolean = false,
 )
 
 data class ChatMessage(
@@ -71,20 +76,9 @@ data class UserProfile(
   val password: String,
 )
 
-fun formatRupiah(value: Int): String {
-  val text = value.toLong().toString()
-  val builder = StringBuilder()
-  var count = 0
-  for (i in text.length - 1 downTo 0) {
-    builder.append(text[i])
-    count++
-    if (count == 3 && i != 0) {
-      builder.append('.')
-      count = 0
-    }
-  }
-  return "Rp " + builder.reverse().toString()
-}
+fun formatRupiah(value: Long): String = CurrencyHelper.format(value)
+
+fun formatRupiah(value: Int): String = CurrencyHelper.format(value.toLong())
 
 fun remainingLoanBalance(entry: LoanEntry): Int {
   return (entry.principal - entry.paid).coerceAtLeast(0)

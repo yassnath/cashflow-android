@@ -24,9 +24,18 @@ fun isExpenseType(type: String): Boolean {
     t == "1"
 }
 
+fun isTransferType(type: String): Boolean {
+  val t = type.trim()
+  return t.equals("Transfer", ignoreCase = true) ||
+    t.equals("transfer", ignoreCase = true) ||
+    t.startsWith("trans", ignoreCase = true) ||
+    t == "2"
+}
+
 data class LoadedUserData(
   val income: List<MoneyEntry>,
   val expense: List<MoneyEntry>,
+  val transfer: List<MoneyEntry> = emptyList(),
   val dreams: List<DreamEntry>,
   val pendingDateUpdates: List<Pair<String, String>>,
 )
@@ -131,6 +140,17 @@ suspend fun fetchUserData(userId: String, authId: String): LoadedUserData {
     )
   }
 
+  val transfer = distinctMoney.filter { isTransferType(it.type) }.map { row ->
+    val fallbackTime = formatTimeFromCreatedAt(row.createdAt)
+    val normalizedDate = if (fallbackTime != null) ensureDateHasTime(row.date, fallbackTime) else row.date
+    if (normalizedDate != row.date && fallbackTime != null) pendingDateUpdates.add(row.id to normalizedDate)
+    MoneyEntry(
+      id = row.id, type = EntryType.Transfer, amount = row.amountInt, date = normalizedDate,
+      category = row.category.ifBlank { "Transfer" }, note = row.note, sourceOrMethod = row.sourceOrMethod,
+      channelOrBank = row.channelOrBank, createdAt = row.createdAt,
+    )
+  }
+
   val dreams = distinctDreams.map { row ->
     DreamEntry(
       id = row.id, title = row.title, target = row.targetInt, current = row.currentInt,
@@ -138,5 +158,5 @@ suspend fun fetchUserData(userId: String, authId: String): LoadedUserData {
     )
   }
 
-  return LoadedUserData(income, expense, dreams, pendingDateUpdates)
+  return LoadedUserData(income, expense, transfer, dreams, pendingDateUpdates)
 }

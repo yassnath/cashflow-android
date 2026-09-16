@@ -13,11 +13,19 @@ import androidx.compose.material.icons.rounded.Palette
 import androidx.compose.material.icons.rounded.Person
 import androidx.compose.material.icons.rounded.PieChart
 import androidx.compose.material.icons.rounded.Psychology
+import androidx.compose.material.icons.automirrored.rounded.Logout
 import androidx.compose.material.icons.automirrored.rounded.ReceiptLong
 import androidx.compose.material.icons.automirrored.rounded.TrendingUp
+import androidx.compose.material.icons.rounded.AdminPanelSettings
+import androidx.compose.material.icons.rounded.Category
+import androidx.compose.material.icons.rounded.HealthAndSafety
+import androidx.compose.material.icons.rounded.Notifications
+import androidx.compose.material.icons.rounded.Schedule
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material.icons.rounded.SmartToy
 import androidx.compose.material.icons.rounded.Stars
+import androidx.compose.material.icons.rounded.SwapHoriz
+import androidx.compose.material.icons.rounded.TrackChanges
 import androidx.compose.ui.graphics.vector.ImageVector
 
 /**
@@ -220,6 +228,7 @@ fun themePageIcon(theme: ThemeName, page: Page): String {
     Page.Dashboard -> set.dashboard
     Page.Income -> set.income
     Page.Expense -> set.expense
+    Page.Transfer -> "🔁"
     Page.Dreams -> set.dreams
     Page.History -> set.history
     Page.Insights -> set.insights
@@ -245,6 +254,7 @@ fun themePageVisualIcon(theme: ThemeName, page: Page): ThemedVisualIcon {
         Page.Dashboard -> Icons.Rounded.Dashboard
         Page.Income -> Icons.Rounded.AccountBalanceWallet
         Page.Expense -> Icons.AutoMirrored.Rounded.ReceiptLong
+        Page.Transfer -> Icons.Rounded.SwapHoriz
         Page.Dreams -> Icons.Rounded.Stars
         Page.History -> Icons.Rounded.History
         Page.Insights -> Icons.Rounded.Psychology
@@ -270,11 +280,25 @@ fun themePageVisualIcon(theme: ThemeName, page: Page): ThemedVisualIcon {
 fun themeSectionVisualIcon(theme: ThemeName, iconType: String, cartoonEmoji: String): ThemedVisualIcon {
   return when (theme) {
     ThemeName.StandardLight, ThemeName.StandardDark -> {
-      when (iconType) {
-        "pie" -> ThemedVisualIcon.Vector(Icons.Rounded.PieChart)
-        "trend" -> ThemedVisualIcon.Vector(Icons.AutoMirrored.Rounded.TrendingUp)
-        "bar" -> ThemedVisualIcon.Vector(Icons.Rounded.BarChart)
-        else -> ThemedVisualIcon.ThemedBadge(cartoonEmoji)
+      val vector = when (iconType) {
+        "pie" -> Icons.Rounded.PieChart
+        "trend" -> Icons.AutoMirrored.Rounded.TrendingUp
+        "bar" -> Icons.Rounded.BarChart
+        "wallet" -> Icons.Rounded.AccountBalanceWallet
+        "history" -> Icons.Rounded.History
+        "target" -> Icons.Rounded.TrackChanges
+        "health" -> Icons.Rounded.HealthAndSafety
+        "debt" -> Icons.Rounded.Schedule
+        "bell" -> Icons.Rounded.Notifications
+        "category" -> Icons.Rounded.Category
+        "logout" -> Icons.AutoMirrored.Rounded.Logout
+        "admin" -> Icons.Rounded.AdminPanelSettings
+        else -> null
+      }
+      if (vector != null) {
+        ThemedVisualIcon.Vector(vector)
+      } else {
+        ThemedVisualIcon.ThemedBadge(cartoonEmoji)
       }
     }
     else -> ThemedVisualIcon.ThemedBadge(cartoonEmoji)

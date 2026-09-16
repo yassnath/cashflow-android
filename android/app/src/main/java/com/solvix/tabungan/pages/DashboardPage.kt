@@ -9,21 +9,25 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.solvix.tabungan.pages.dashboard.DashboardAssetsCard
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 
 /**
- * Halaman utama Dashboard CashFlow Android.
- * Komponen visual telah dipecah modular ke folder `pages/dashboard/` untuk maintainability:
- * - [DashboardBanner]: Sapaan pengguna, tanggal, status finansial, kartu saldo animasi, & pill masuk/keluar
- * - [DashboardQuickActions]: Tombol aksi cepat (Masuk, Keluar, Target, AI)
- * - [DashboardFlowDonutChart]: Donut chart perbandingan Pemasukkan vs Pengeluaran
- * - [DashboardTrendLineChart]: Grafik garis tren bulanan 12 bulan
- * - [DashboardTopExpenseBars]: Grafik batang horizontal top 5 kategori pengeluaran
- * - [DashboardGoalCards]: Kartu progres target tabungan impian
- * - [DashboardLoanSummary]: Ringkasan pinjaman & hutang aktif
+ * Halaman utama Dashboard CashFlow Android yang kaya visual, interaktif, dan modular:
+ * 1. [DashboardBanner]: Sapaan pengguna, tanggal, status finansial, kartu saldo counter animasi, & pill masuk/keluar
+ * 2. [DashboardQuickActions]: Tombol aksi cepat (Masuk, Keluar, Target, AI)
+ * 3. [DashboardFinancialHealthCard]: Skor kesehatan finansial, rasio tabungan, & rata-rata pengeluaran harian
+ * 4. [DashboardFlowDonutChart]: Donut chart perbandingan Pemasukkan vs Pengeluaran beranimasi
+ * 5. [DashboardTrendLineChart]: Grafik garis tren bulanan reaktif dengan pemilih tahun & animasi
+ * 6. [DashboardRecentTransactions]: Daftar transaksi terkini dengan ikon & navigasi cepat ke riwayat
+ * 7. [DashboardTopExpenseBars]: Grafik batang horizontal top 5 kategori pengeluaran beranimasi
+ * 8. [DashboardPaymentMethods]: Distribusi pengeluaran per metode pembayaran / dompet
+ * 9. [DashboardUpcomingBills]: Pengingat tagihan pinjaman & target jatuh tempo
+ * 10. [DashboardGoalCards]: Kartu progres target tabungan impian
+ * 11. [DashboardLoanSummary]: Ringkasan pinjaman & hutang aktif
  */
 @Composable
 fun DashboardPage(
@@ -35,6 +39,7 @@ fun DashboardPage(
   currentLang: AppLanguage,
   strings: AppStrings,
   onNavigateTo: (Page) -> Unit,
+  transferEntries: List<MoneyEntry> = emptyList(),
 ) {
   // -- Ringkasan Finansial Utama --
   val totalIncome = incomeEntries.sumOf { it.amount }
@@ -86,14 +91,32 @@ fun DashboardPage(
       onNavigateTo = onNavigateTo,
     )
 
-    // 3. Donut Chart - Pemasukkan vs Pengeluaran
+    // 3. Aset & Saldo Akun / Dompet
+    DashboardAssetsCard(
+      incomeEntries = incomeEntries,
+      expenseEntries = expenseEntries,
+      transferEntries = transferEntries,
+      netBalance = netBalance.toLong(),
+      strings = strings,
+      onTransferClick = { onNavigateTo(Page.Transfer) },
+    )
+
+    // 4. Skor Kesehatan Finansial & Rasio Tabungan
+    DashboardFinancialHealthCard(
+      totalIncome = totalIncome,
+      totalExpense = totalExpense,
+      thisMonthExpenses = thisMonthExpenses,
+      strings = strings,
+    )
+
+    // 4. Donut Chart - Pemasukkan vs Pengeluaran
     DashboardFlowDonutChart(
       totalIncome = totalIncome,
       totalExpense = totalExpense,
       strings = strings,
     )
 
-    // 4. Line Chart - Tren Bulanan
+    // 5. Line Chart - Tren Bulanan (Reaktif & Beranimasi)
     DashboardTrendLineChart(
       incomeEntries = incomeEntries,
       expenseEntries = expenseEntries,
@@ -101,21 +124,51 @@ fun DashboardPage(
       strings = strings,
     )
 
-    // 5. Bar Chart Horizontal - Top 5 Kategori Pengeluaran
+    // 6. Transaksi Terakhir (Recent Transactions)
+    DashboardRecentTransactions(
+      incomeEntries = incomeEntries,
+      expenseEntries = expenseEntries,
+      transferEntries = transferEntries,
+      strings = strings,
+      onNavigateTo = onNavigateTo,
+    )
+
+    // 7. Bar Chart Horizontal - Top 5 Kategori Pengeluaran
     DashboardTopExpenseBars(
       thisMonthExpenses = thisMonthExpenses,
       allExpenseEntries = expenseEntries,
       strings = strings,
     )
 
-    // 6. Progres Target Impian
+    // 8. Anggaran per Kategori (Category Budgeting)
+    DashboardCategoryBudgets(
+      thisMonthExpenses = thisMonthExpenses,
+      allExpenseEntries = expenseEntries,
+      strings = strings,
+    )
+
+    // 9. Distribusi Metode Pembayaran / Dompet
+    DashboardPaymentMethods(
+      expenseEntries = expenseEntries,
+      strings = strings,
+    )
+
+    // 9. Pengingat Tagihan & Jatuh Tempo
+    DashboardUpcomingBills(
+      loanEntries = loanEntries,
+      dreamEntries = dreamEntries,
+      strings = strings,
+      onNavigateTo = onNavigateTo,
+    )
+
+    // 10. Progres Target Impian
     DashboardGoalCards(
       dreamEntries = dreamEntries,
       strings = strings,
       onNavigateTo = onNavigateTo,
     )
 
-    // 7. Ringkasan Hutang & Pinjaman
+    // 11. Ringkasan Hutang & Pinjaman
     DashboardLoanSummary(
       loanEntries = loanEntries,
       strings = strings,

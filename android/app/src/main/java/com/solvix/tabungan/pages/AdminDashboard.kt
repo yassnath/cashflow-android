@@ -59,7 +59,7 @@ fun AdminDashboard(
 
   Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
     SectionTitle(
-      icon = "🛡️",
+      icon = themeSectionVisualIcon(LocalThemeName.current, "admin", "🛡️"),
       title = strings["admin_dashboard_title"],
       subtitle = strings["admin_dashboard_subtitle"],
     )

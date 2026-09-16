@@ -18,7 +18,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlin.math.roundToInt
@@ -41,6 +40,7 @@ fun DashboardFlowDonutChart(
       SectionTitle(
         icon = themeSectionVisualIcon(theme, "pie", "📊"),
         title = strings["dashboard_income_vs_expense"],
+        compact = true,
       )
 
       if (totalIncome == 0 && totalExpense == 0) {
@@ -58,7 +58,9 @@ fun DashboardFlowDonutChart(
           DonutSlice(label = strings["page_expense"], value = totalExpense, color = expenseColor),
         )
         val totalFlow = (totalIncome + totalExpense).coerceAtLeast(1)
-        val incomePercentage = ((totalIncome.toFloat() / totalFlow) * 100).roundToInt()
+        val targetIncomePercentage = ((totalIncome.toFloat() / totalFlow) * 100).roundToInt()
+        val animatedIncomePercentage = rememberAnimatedAmount(targetIncomePercentage)
+        val animatedExpensePercentage = (100 - animatedIncomePercentage).coerceAtLeast(0)
 
         Row(
           modifier = Modifier.fillMaxWidth(),
@@ -69,7 +71,7 @@ fun DashboardFlowDonutChart(
             slices = slices,
             modifier = Modifier.size(130.dp),
             strokeWidth = 16.dp,
-            centerLabel = "$incomePercentage%",
+            centerLabel = "$animatedIncomePercentage%",
             centerSubLabel = strings["dashboard_income_short"],
           )
 
@@ -93,17 +95,15 @@ fun DashboardFlowDonutChart(
               Spacer(modifier = Modifier.width(8.dp))
               Column(modifier = Modifier.weight(1f)) {
                 Text(text = strings["page_income"], fontSize = 12.sp, color = colors.muted)
-                Text(
-                  text = formatRupiah(totalIncome),
+                AnimatedAmountText(
+                  amount = totalIncome,
                   fontSize = 13.sp,
                   fontWeight = FontWeight.Bold,
                   color = colors.text,
-                  maxLines = 1,
-                  overflow = TextOverflow.Ellipsis,
                 )
               }
               Text(
-                text = "$incomePercentage%",
+                text = "$animatedIncomePercentage%",
                 fontSize = 12.sp,
                 fontWeight = FontWeight.SemiBold,
                 color = incomeColor,
@@ -111,7 +111,6 @@ fun DashboardFlowDonutChart(
             }
 
             // Expense row
-            val expensePercentage = 100 - incomePercentage
             Row(
               modifier = Modifier.fillMaxWidth(),
               verticalAlignment = Alignment.CenterVertically,
@@ -125,17 +124,15 @@ fun DashboardFlowDonutChart(
               Spacer(modifier = Modifier.width(8.dp))
               Column(modifier = Modifier.weight(1f)) {
                 Text(text = strings["page_expense"], fontSize = 12.sp, color = colors.muted)
-                Text(
-                  text = formatRupiah(totalExpense),
+                AnimatedAmountText(
+                  amount = totalExpense,
                   fontSize = 13.sp,
                   fontWeight = FontWeight.Bold,
                   color = colors.text,
-                  maxLines = 1,
-                  overflow = TextOverflow.Ellipsis,
                 )
               }
               Text(
-                text = "$expensePercentage%",
+                text = "$animatedExpensePercentage%",
                 fontSize = 12.sp,
                 fontWeight = FontWeight.SemiBold,
                 color = expenseColor,

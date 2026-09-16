@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -42,6 +43,7 @@ fun ModalOverlay(content: @Composable () -> Unit) {
     modifier = Modifier
       .fillMaxSize()
       .background(Color(0xB20A0A14))
+      .imePadding()
       .padding(horizontal = 16.dp),
     contentAlignment = Alignment.Center,
   ) {

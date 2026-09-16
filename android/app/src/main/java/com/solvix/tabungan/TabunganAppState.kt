@@ -85,6 +85,7 @@ class TabunganAppState(
 
   val incomeEntries = mutableStateListOf<MoneyEntry>()
   val expenseEntries = mutableStateListOf<MoneyEntry>()
+  val transferEntries = mutableStateListOf<MoneyEntry>()
   val dreamEntries = mutableStateListOf<DreamEntry>()
   val loanEntries = mutableStateListOf<LoanEntry>()
   val cachedInsights = mutableStateListOf<InsightItem>()
@@ -154,8 +155,15 @@ class TabunganAppState(
     )
   }
 
-  fun scheduleGoalDeadlineWorker() = com.solvix.tabungan.scheduleGoalDeadlineWorker(context)
-  fun cancelGoalDeadlineWorker() = com.solvix.tabungan.cancelGoalDeadlineWorker(context)
+  fun scheduleGoalDeadlineWorker() {
+    com.solvix.tabungan.scheduleGoalDeadlineWorker(context)
+    LoanDueDateWorker.schedule(context)
+  }
+
+  fun cancelGoalDeadlineWorker() {
+    com.solvix.tabungan.cancelGoalDeadlineWorker(context)
+    LoanDueDateWorker.cancel(context)
+  }
 
   fun syncDebtFromExpense(entry: MoneyEntry, detectedType: String?, userId: String) =
     com.solvix.tabungan.syncDebtFromExpense(entry, detectedType, userId, loanEntries, securePrefs, localJson)
@@ -168,6 +176,7 @@ class TabunganAppState(
     incomeEntries = incomeEntries, expenseEntries = expenseEntries, dreamEntries = dreamEntries,
     achievedGoalIds = achievedGoalIds, strings = strings, context = context,
     onGoalReachEvent = { goalReachEvent = it }, onToast = { toastMessage = it; toastVisible = true },
+    transferEntries = transferEntries,
   )
 
   fun loadLoanEntries(userId: String) =
@@ -217,6 +226,7 @@ class TabunganAppState(
     cancelGoalDeadlineWorker()
     incomeEntries.clear()
     expenseEntries.clear()
+    transferEntries.clear()
     dreamEntries.clear()
     loanEntries.clear()
     cachedInsights.clear()

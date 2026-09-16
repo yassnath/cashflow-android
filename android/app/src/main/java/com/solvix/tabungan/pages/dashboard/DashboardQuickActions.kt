@@ -41,9 +41,10 @@ fun DashboardQuickActions(
         color = colors.text,
       )
 
+      // Baris 1: Transaksi Keuangan
       Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
       ) {
         QuickActionButton(
           icon = themePageVisualIcon(theme, Page.Income),
@@ -60,15 +61,36 @@ fun DashboardQuickActions(
           onClick = { onNavigateTo(Page.Expense) },
         )
         QuickActionButton(
+          icon = themePageVisualIcon(theme, Page.Transfer),
+          label = strings["page_transfer"].ifBlank { "Transfer" },
+          modifier = Modifier.weight(1f),
+          color = Color(0xFF0288D1),
+          onClick = { onNavigateTo(Page.Transfer) },
+        )
+      }
+
+      // Baris 2: Navigasi Fitur Cepat
+      Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+      ) {
+        QuickActionButton(
+          icon = themePageVisualIcon(theme, Page.History),
+          label = strings["page_history"],
+          modifier = Modifier.weight(1f),
+          color = colors.accent,
+          onClick = { onNavigateTo(Page.History) },
+        )
+        QuickActionButton(
           icon = themePageVisualIcon(theme, Page.Dreams),
           label = strings["page_dreams"],
           modifier = Modifier.weight(1f),
-          color = colors.accent,
+          color = Color(0xFFFFA000),
           onClick = { onNavigateTo(Page.Dreams) },
         )
         QuickActionButton(
           icon = themePageVisualIcon(theme, Page.AIChat),
-          label = strings["menu_ai_chat"],
+          label = strings["page_ai_chat"].ifBlank { "AI Chat" },
           modifier = Modifier.weight(1f),
           color = colors.accent2,
           onClick = { onNavigateTo(Page.AIChat) },
@@ -93,17 +115,17 @@ private fun QuickActionButton(
       .clip(RoundedCornerShape(AppDimens.radiusSm))
       .background(color.copy(alpha = 0.12f))
       .clickable(onClick = onClick)
-      .padding(vertical = 10.dp, horizontal = 4.dp),
+      .padding(vertical = 10.dp, horizontal = 2.dp),
     contentAlignment = Alignment.Center,
   ) {
     Column(
       horizontalAlignment = Alignment.CenterHorizontally,
-      verticalArrangement = Arrangement.spacedBy(6.dp),
+      verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
       ThemedBadgeIcon(
         icon = icon,
-        containerSize = 32.dp,
-        iconSize = 18.dp,
+        containerSize = 30.dp,
+        iconSize = 16.dp,
         tint = color,
         bgAlpha = 0.22f,
       )

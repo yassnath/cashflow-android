@@ -19,3 +19,5 @@ local.properties
 android/app/release/
 *.apk
 .vscode/
+*.jks
+*.keystore

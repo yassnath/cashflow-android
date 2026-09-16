@@ -21,13 +21,23 @@ import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 private const val PREF_SELECTED_THEME = "selected_theme"
 
 class MainActivity : FragmentActivity() {
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
+    CurrencyHelper.init(this)
+    val prefs = getSharedPreferences("tabungan_prefs", MODE_PRIVATE)
+    if (prefs.getBoolean("privacy_screen_enabled", false)) {
+      window.setFlags(
+        android.view.WindowManager.LayoutParams.FLAG_SECURE,
+        android.view.WindowManager.LayoutParams.FLAG_SECURE,
+      )
+    }
     setContent {
       TabunganApp()
     }
@@ -70,15 +80,58 @@ fun TabunganApp() {
     }
   }
 
+  var lastBackgroundTimestamp by rememberSaveable { mutableStateOf(0L) }
   val lifecycleOwner = LocalLifecycleOwner.current
   DisposableEffect(lifecycleOwner) {
     val observer = LifecycleEventObserver { _, event ->
-      if (event == Lifecycle.Event.ON_START) {
-        state.fadeSeed += 1
+      when (event) {
+        Lifecycle.Event.ON_STOP -> {
+          lastBackgroundTimestamp = System.currentTimeMillis()
+        }
+        Lifecycle.Event.ON_START -> {
+          state.fadeSeed += 1
+          CurrencyHelper.checkAndAutoRefresh(context)
+          if (lastBackgroundTimestamp > 0L && state.isLoggedIn && state.fingerprintEnabled && state.canUseFingerprint()) {
+            val timeoutSetting = state.prefs.getString("auto_lock_timeout", "off") ?: "off"
+            val timeoutMs = when (timeoutSetting) {
+              "instant", "Segera" -> 0L
+              "1min", "1 Menit" -> 60_000L
+              "5min", "5 Menit" -> 300_000L
+              else -> -1L
+            }
+            if (timeoutMs >= 0L && System.currentTimeMillis() - lastBackgroundTimestamp >= timeoutMs) {
+              state.launchFingerprintAuth {
+                // Unlocked successfully via native biometric prompt (no PIN required)
+              }
+            }
+          }
+          lastBackgroundTimestamp = 0L
+        }
+        else -> Unit
       }
     }
     lifecycleOwner.lifecycle.addObserver(observer)
     onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+  }
+
+  LaunchedEffect(Unit) {
+    DailyReminderHelper.setDailyReminder(context, state.prefs.getBoolean("daily_reminder_enabled", true))
+  }
+
+  LaunchedEffect(state.isLoggedIn, state.currentUser?.id) {
+    val uid = state.currentUser?.id
+    if (state.isLoggedIn && uid?.isNotBlank() == true) {
+      RecurringManager.checkAndGenerateDueTransactions(context) { entry ->
+        if (entry.type == EntryType.Income) {
+          state.incomeEntries.add(entry)
+        } else {
+          state.expenseEntries.add(entry)
+        }
+        kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
+          SupabaseRepository.insertMoneyEntry(uid, entry)
+        }
+      }
+    }
   }
 
   LaunchedEffect(state.currentTheme) {
