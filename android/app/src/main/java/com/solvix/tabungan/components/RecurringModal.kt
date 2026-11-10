@@ -10,21 +10,16 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Close
-import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -38,21 +33,15 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
-import com.solvix.tabungan.AppCard
-import com.solvix.tabungan.AppTextField
-import com.solvix.tabungan.EntryType
-import com.solvix.tabungan.GhostButton
-import com.solvix.tabungan.GradientButton
 import com.solvix.tabungan.LocalAppColors
 import com.solvix.tabungan.LocalStrings
 import com.solvix.tabungan.MoneyEntry
 import com.solvix.tabungan.RecurringManager
-import com.solvix.tabungan.RecurringTransaction
-import com.solvix.tabungan.formatRupiah
+import com.solvix.tabungan.components.recurring.RecurringAddForm
+import com.solvix.tabungan.components.recurring.RecurringItemCard
 
 @Composable
 fun RecurringSubscriptionsModal(
@@ -65,13 +54,6 @@ fun RecurringSubscriptionsModal(
 
   var items by remember { mutableStateOf(RecurringManager.getAll(context)) }
   var showAddForm by remember { mutableStateOf(false) }
-
-  var title by remember { mutableStateOf("") }
-  var amountStr by remember { mutableStateOf("") }
-  var isExpense by remember { mutableStateOf(true) }
-  var category by remember { mutableStateOf(strings["category_subscription"] ?: "Langganan") }
-  var dueDayStr by remember { mutableStateOf("1") }
-  var note by remember { mutableStateOf("") }
   var toastMessage by remember { mutableStateOf<String?>(null) }
 
   Dialog(onDismissRequest = onDismiss) {
@@ -171,123 +153,16 @@ fun RecurringSubscriptionsModal(
 
         // Form Tambah
         if (showAddForm) {
-          AppCard {
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-              Text(
-                text = strings["recurring_add_title"].ifBlank { "Tambah Langganan Rutin Baru" },
-                fontWeight = FontWeight.Bold,
-                fontSize = 13.sp,
-                color = colors.text,
-              )
-
-              AppTextField(
-                label = strings["recurring_label_title"].ifBlank { "Judul Langganan" },
-                value = title,
-                onValueChange = { title = it },
-                placeholder = strings["recurring_placeholder_title"].ifBlank { "Misal: Netflix, Listrik, Kos" },
-              )
-
-              AppTextField(
-                label = strings["amount"].ifBlank { "Nominal" },
-                value = amountStr,
-                onValueChange = { amountStr = it },
-                placeholder = "150000",
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-              )
-
-              Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Box(
-                  modifier = Modifier
-                    .weight(1f)
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(if (isExpense) colors.danger.copy(alpha = 0.2f) else colors.bg2)
-                    .clickable { isExpense = true }
-                    .padding(vertical = 8.dp),
-                  contentAlignment = Alignment.Center,
-                ) {
-                  Text(
-                    text = strings["entry_type_expense"].ifBlank { "Pengeluaran" },
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = if (isExpense) colors.danger else colors.muted,
-                  )
-                }
-                Box(
-                  modifier = Modifier
-                    .weight(1f)
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(if (!isExpense) colors.accent.copy(alpha = 0.2f) else colors.bg2)
-                    .clickable { isExpense = false }
-                    .padding(vertical = 8.dp),
-                  contentAlignment = Alignment.Center,
-                ) {
-                  Text(
-                    text = strings["entry_type_income"].ifBlank { "Pemasukan" },
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = if (!isExpense) colors.accent else colors.muted,
-                  )
-                }
-              }
-
-              Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Box(modifier = Modifier.weight(1f)) {
-                  AppTextField(
-                    label = strings["recurring_due_day"].ifBlank { "Tanggal Tagihan" },
-                    value = dueDayStr,
-                    onValueChange = { dueDayStr = it },
-                    placeholder = "1 - 31",
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                  )
-                }
-                Box(modifier = Modifier.weight(1f)) {
-                  AppTextField(
-                    label = strings["category"].ifBlank { "Kategori" },
-                    value = category,
-                    onValueChange = { category = it },
-                    placeholder = "Hiburan",
-                  )
-                }
-              }
-
-              AppTextField(
-                label = strings["recurring_note_optional"].ifBlank { "Catatan Tambahan (Opsional)" },
-                value = note,
-                onValueChange = { note = it },
-                placeholder = strings["note_optional"].ifBlank { "Catatan tambahan..." },
-              )
-
-              Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-                GhostButton(
-                  text = strings["confirm_cancel"].ifBlank { "Batal" },
-                  modifier = Modifier.weight(1f),
-                  onClick = { showAddForm = false },
-                )
-                GradientButton(
-                  text = strings["save"].ifBlank { "Simpan" },
-                  modifier = Modifier.weight(1f),
-                  enabled = title.isNotBlank() && (amountStr.toIntOrNull() ?: 0) > 0,
-                  onClick = {
-                    val newObj = RecurringTransaction(
-                      title = title.trim(),
-                      amount = amountStr.toIntOrNull() ?: 0,
-                      type = if (isExpense) "Expense" else "Income",
-                      category = category.trim().ifBlank { "Rutin" },
-                      dueDay = (dueDayStr.toIntOrNull() ?: 1).coerceIn(1, 31),
-                      note = note.trim(),
-                    )
-                    RecurringManager.add(context, newObj)
-                    items = RecurringManager.getAll(context)
-                    title = ""
-                    amountStr = ""
-                    note = ""
-                    showAddForm = false
-                    toastMessage = strings["recurring_added_success"].ifBlank { "Langganan rutin berhasil ditambahkan!" }
-                  },
-                )
-              }
-            }
-          }
+          RecurringAddForm(
+            strings = strings,
+            onCancel = { showAddForm = false },
+            onSave = { newObj ->
+              RecurringManager.add(context, newObj)
+              items = RecurringManager.getAll(context)
+              showAddForm = false
+              toastMessage = strings["recurring_added_success"].ifBlank { "Langganan rutin berhasil ditambahkan!" }
+            },
+          )
         } else {
           Box(
             modifier = Modifier
@@ -334,72 +209,21 @@ fun RecurringSubscriptionsModal(
           }
         } else {
           Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            val dayPrefix = strings["recurring_every_day"].ifBlank { "Tiap tgl" }
             items.forEach { item ->
-              val isItemExpense = item.type.equals("Expense", ignoreCase = true)
-              val dayPrefix = strings["recurring_every_day"].ifBlank { "Tiap tgl" }
-              Row(
-                modifier = Modifier
-                  .fillMaxWidth()
-                  .clip(RoundedCornerShape(12.dp))
-                  .background(colors.bg2)
-                  .border(1.dp, colors.cardBorder, RoundedCornerShape(12.dp))
-                  .padding(12.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-              ) {
-                Column(modifier = Modifier.weight(1f)) {
-                  Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Text(
-                      text = item.title,
-                      fontSize = 13.sp,
-                      fontWeight = FontWeight.Bold,
-                      color = colors.text,
-                    )
-                    Box(
-                      modifier = Modifier
-                        .clip(RoundedCornerShape(4.dp))
-                        .background(if (isItemExpense) colors.danger.copy(alpha = 0.15f) else colors.accent.copy(alpha = 0.15f))
-                        .padding(horizontal = 6.dp, vertical = 2.dp),
-                    ) {
-                      Text(
-                        text = "$dayPrefix ${item.dueDay}",
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = if (isItemExpense) colors.danger else colors.accent,
-                      )
-                    }
-                  }
-                  Spacer(modifier = Modifier.height(2.dp))
-                  Text(
-                    text = "${if (isItemExpense) "-" else "+"} ${formatRupiah(item.amount)} • ${item.category}",
-                    fontSize = 11.sp,
-                    color = if (isItemExpense) colors.danger else colors.accent,
-                    fontWeight = FontWeight.SemiBold,
-                  )
-                  if (item.note.isNotBlank()) {
-                    Text(text = item.note, fontSize = 10.sp, color = colors.muted)
-                  }
-                }
-
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                  Switch(
-                    checked = item.isActive,
-                    onCheckedChange = {
-                      RecurringManager.toggleActive(context, item.id)
-                      items = RecurringManager.getAll(context)
-                    },
-                  )
-                  IconButton(
-                    onClick = {
-                      RecurringManager.delete(context, item.id)
-                      items = RecurringManager.getAll(context)
-                    },
-                    modifier = Modifier.size(28.dp),
-                  ) {
-                    Icon(imageVector = Icons.Rounded.Delete, contentDescription = strings["delete"], tint = colors.danger.copy(alpha = 0.7f), modifier = Modifier.size(18.dp))
-                  }
-                }
-              }
+              RecurringItemCard(
+                item = item,
+                dayPrefix = dayPrefix,
+                deleteContentDescription = strings["delete"],
+                onToggleActive = {
+                  RecurringManager.toggleActive(context, item.id)
+                  items = RecurringManager.getAll(context)
+                },
+                onDelete = {
+                  RecurringManager.delete(context, item.id)
+                  items = RecurringManager.getAll(context)
+                },
+              )
             }
           }
         }

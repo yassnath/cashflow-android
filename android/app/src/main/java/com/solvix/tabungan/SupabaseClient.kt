@@ -91,3 +91,15 @@ data class SupabaseInsightFeedback(
   @SerialName("created_at")
   val createdAt: String = "",
 )
+
+@Serializable
+data class SupabaseInitialBalance(
+  val id: String = "",
+  @SerialName("user_id")
+  val userId: String = "",
+  @SerialName("account_name")
+  val accountName: String = "",
+  val balance: Long = 0L,
+  @SerialName("updated_at")
+  val updatedAt: String = "",
+)

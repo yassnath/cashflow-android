@@ -20,6 +20,9 @@
         <action android:name="android.intent.action.MAIN" />
         <category android:name="android.intent.category.LAUNCHER" />
       </intent-filter>
+      <meta-data
+        android:name="android.app.shortcuts"
+        android:resource="@xml/shortcuts" />
     </activity>
 
     <provider
@@ -31,5 +34,9 @@
         android:name="android.support.FILE_PROVIDER_PATHS"
         android:resource="@xml/file_paths" />
     </provider>
+
+    <meta-data
+      android:name="com.google.mlkit.vision.DEPENDENCIES"
+      android:value="ocr" />
   </application>
 </manifest>

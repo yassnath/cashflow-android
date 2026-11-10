@@ -10,6 +10,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Scaffold
@@ -25,11 +27,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.runtime.snapshots.SnapshotStateList
-import com.solvix.tabungan.components.AlertModal
-import com.solvix.tabungan.components.AuthModalSheet
-import com.solvix.tabungan.components.ConfirmModal
-import com.solvix.tabungan.components.LoadingOverlay
-import com.solvix.tabungan.components.SplashModal
+import com.solvix.tabungan.components.AppShellModals
 
 /**
  * Main application layout wrapper containing Scaffold, TopBar, BottomNav, Page Content, and Modals.
@@ -82,6 +80,8 @@ fun AppShellLayout(
   fadeSeed: Int,
   pageFadeSeed: Int,
   scope: kotlinx.coroutines.CoroutineScope,
+  isAppLocked: Boolean = false,
+  onUnlockRequest: () -> Unit = {},
   onNavigateTo: (Page) -> Unit,
   onShowProfileMenuChange: (Boolean) -> Unit,
   onLogoutClick: () -> Unit,
@@ -128,6 +128,9 @@ fun AppShellLayout(
   signUpPassword: String, onSignUpPasswordChange: (String) -> Unit,
 ) {
   val colors = LocalAppColors.current
+  val configuration = LocalConfiguration.current
+  val isSmallScreen = configuration.screenWidthDp < 360
+  val horizontalPagePadding = if (isSmallScreen) 12.dp else AppDimens.pagePadding
   val modalOpen = showLoading || showSplash || showAuth || showConfirm || showAlert
   val loadingAlpha by animateFloatAsState(
     targetValue = if (showLoading && !loadingFadeOut) 1f else 0f,
@@ -142,21 +145,26 @@ fun AppShellLayout(
       bottomBar = {
         if (!adminLoggedIn && !showAuth && !showSplash) {
           val navBlur = showSplash || showAuth
-          Box {
-            BottomNav(
-              current = currentPage,
-              onSelect = { page -> onNavigateTo(page) },
-              strings = strings,
-              theme = currentTheme,
-              modifier = Modifier.then(if (navBlur) Modifier.blur(24.dp) else Modifier),
-            )
-            if (navBlur) {
-              Box(
-                modifier = Modifier
-                  .matchParentSize()
-                  .background(Color(0xCCFFFFFF))
-                  .clickable(enabled = true, onClick = {}),
+          Box(
+            modifier = Modifier.fillMaxWidth(),
+            contentAlignment = Alignment.BottomCenter,
+          ) {
+            Box(modifier = Modifier.widthIn(max = 680.dp)) {
+              BottomNav(
+                current = currentPage,
+                onSelect = { page -> onNavigateTo(page) },
+                strings = strings,
+                theme = currentTheme,
+                modifier = Modifier.then(if (navBlur) Modifier.blur(24.dp) else Modifier),
               )
+              if (navBlur) {
+                Box(
+                  modifier = Modifier
+                    .matchParentSize()
+                    .background(Color(0xCCFFFFFF))
+                    .clickable(enabled = true, onClick = {}),
+                )
+              }
             }
           }
         }
@@ -168,23 +176,28 @@ fun AppShellLayout(
         modalOpen -> 20.dp
         else -> 0.dp
       }
-      Box(modifier = Modifier.fillMaxSize()) {
+      Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
         Column(
           modifier = Modifier
             .fillMaxSize()
+            .widthIn(max = 680.dp)
             .padding(padding)
             .then(if (blurRadius.value > 0f) Modifier.blur(blurRadius) else Modifier)
             .verticalScroll(rememberScrollState())
             .padding(
-              start = AppDimens.pagePadding,
-              end = AppDimens.pagePadding,
+              start = horizontalPagePadding,
+              end = horizontalPagePadding,
               bottom = 24.dp,
               top = 0.dp,
             ),
           verticalArrangement = Arrangement.spacedBy(16.dp),
+          horizontalAlignment = Alignment.CenterHorizontally,
         ) {
           FadeInPage(key = "${currentPage}_${fadeSeed}_${pageFadeSeed}_page") {
-            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            Column(
+              modifier = Modifier.fillMaxWidth(),
+              verticalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
               TopBar(
                 onProfileClick = { onShowProfileMenuChange(true) },
                 showMenu = showProfileMenu,
@@ -277,80 +290,57 @@ fun AppShellLayout(
       }
     }
 
-    Box(
-      modifier = Modifier
-        .fillMaxWidth()
-        .padding(bottom = 72.dp)
-        .align(Alignment.BottomCenter),
-      contentAlignment = Alignment.Center,
-    ) {
-      ToastMessage(text = toastMessage, visible = toastVisible)
-    }
+    AppShellModals(
+      strings = strings,
+      currentLang = currentLang,
+      toastVisible = toastVisible,
+      toastMessage = toastMessage,
+      showSplash = showSplash,
+      fingerprintEnabled = fingerprintEnabled,
+      biometricAllowed = biometricAllowed,
+      canUseFingerprint = canUseFingerprint,
+      onSplashDismiss = onSplashDismiss,
+      onSplashPrimaryClick = onSplashPrimaryClick,
+      showAuth = showAuth,
+      authTab = authTab,
+      signInUsername = signInUsername,
+      onSignInUsernameChange = onSignInUsernameChange,
+      signInPassword = signInPassword,
+      onSignInPasswordChange = onSignInPasswordChange,
+      signUpName = signUpName,
+      onSignUpNameChange = onSignUpNameChange,
+      signUpEmail = signUpEmail,
+      onSignUpEmailChange = onSignUpEmailChange,
+      signUpCountry = signUpCountry,
+      onSignUpCountryChange = onSignUpCountryChange,
+      signUpBirthdate = signUpBirthdate,
+      onSignUpBirthdateChange = onSignUpBirthdateChange,
+      signUpBio = signUpBio,
+      onSignUpBioChange = onSignUpBioChange,
+      signUpUsername = signUpUsername,
+      onSignUpUsernameChange = onSignUpUsernameChange,
+      signUpPassword = signUpPassword,
+      onSignUpPasswordChange = onSignUpPasswordChange,
+      hasRegistered = hasRegistered,
+      onAuthTabSelect = onAuthTabSelect,
+      onFingerprintLogin = onFingerprintLogin,
+      onSignInClick = onSignInClick,
+      onSignUpClick = onSignUpClick,
+      onAuthCloseClick = onAuthCloseClick,
+      showLoading = showLoading,
+      loadingAlpha = loadingAlpha,
+      showConfirm = showConfirm,
+      confirmMessage = confirmMessage,
+      onConfirmCancel = onConfirmCancel,
+      onConfirmExecute = onConfirmExecute,
+      showAlert = showAlert,
+      alertMessage = alertMessage,
+      onAlertDismiss = onAlertDismiss,
+    )
 
-    if (showSplash) {
-      SplashModal(
-        strings = strings,
-        fingerprintEnabled = fingerprintEnabled,
-        biometricAllowed = biometricAllowed,
-        canUseFingerprint = canUseFingerprint,
-        onDismiss = onSplashDismiss,
-        onPrimaryClick = onSplashPrimaryClick,
-      )
-    }
-
-    if (showAuth) {
-      AuthModalSheet(
-        strings = strings,
-        authTab = authTab,
-        currentLang = currentLang,
-        signInUsername = signInUsername,
-        onSignInUsernameChange = onSignInUsernameChange,
-        signInPassword = signInPassword,
-        onSignInPasswordChange = onSignInPasswordChange,
-        signUpName = signUpName,
-        onSignUpNameChange = onSignUpNameChange,
-        signUpEmail = signUpEmail,
-        onSignUpEmailChange = onSignUpEmailChange,
-        signUpCountry = signUpCountry,
-        onSignUpCountryChange = onSignUpCountryChange,
-        signUpBirthdate = signUpBirthdate,
-        onSignUpBirthdateChange = onSignUpBirthdateChange,
-        signUpBio = signUpBio,
-        onSignUpBioChange = onSignUpBioChange,
-        signUpUsername = signUpUsername,
-        onSignUpUsernameChange = onSignUpUsernameChange,
-        signUpPassword = signUpPassword,
-        onSignUpPasswordChange = onSignUpPasswordChange,
-        fingerprintEnabled = fingerprintEnabled,
-        hasRegistered = hasRegistered,
-        biometricAllowed = biometricAllowed,
-        onTabSelect = onAuthTabSelect,
-        onFingerprintLogin = onFingerprintLogin,
-        onSignInClick = onSignInClick,
-        onSignUpClick = onSignUpClick,
-        onCloseClick = onAuthCloseClick,
-      )
-    }
-
-    if (showLoading) {
-      LoadingOverlay(showLoading = showLoading, loadingAlpha = loadingAlpha)
-    }
-
-    if (showConfirm) {
-      ConfirmModal(
-        strings = strings,
-        confirmMessage = confirmMessage,
-        onCancel = onConfirmCancel,
-        onConfirm = onConfirmExecute,
-      )
-    }
-
-    if (showAlert) {
-      AlertModal(
-        strings = strings,
-        alertMessage = alertMessage,
-        onDismiss = onAlertDismiss,
-      )
-    }
+    com.solvix.tabungan.components.AppLockScreen(
+      isLocked = isAppLocked,
+      onUnlockRequest = onUnlockRequest,
+    )
   }
 }

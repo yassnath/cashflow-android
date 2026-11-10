@@ -13,6 +13,9 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 /**
  * Renders the content area for the currently active [Page].
@@ -116,9 +119,11 @@ fun AppPageContent(
         onUpdateGoalMilestones()
         persistLocalCache()
         HapticHelper.vibrateSuccess(context)
+        onAlert(strings["income_save_success"].ifBlank { "Pemasukan berhasil disimpan! ✅" })
         if (activeUserId.isNotBlank()) {
           scope.launch(Dispatchers.IO) {
-            SupabaseRepository.insertMoneyEntry(activeUserId, entry)
+            SyncQueueManager.enqueueInsertMoney(context, activeUserId, entry)
+            SyncQueueManager.processQueue(context)
             onRefreshInsights(activeUserId, insightsTimeframe, false)
           }
         }
@@ -129,9 +134,11 @@ fun AppPageContent(
         onUpdateGoalMilestones()
         persistLocalCache()
         HapticHelper.vibrateSuccess(context)
+        onAlert(strings["income_update_success"].ifBlank { "Pemasukan berhasil diperbarui! ✅" })
         if (activeUserId.isNotBlank()) {
           scope.launch(Dispatchers.IO) {
-            SupabaseRepository.updateMoneyEntry(entry)
+            SyncQueueManager.enqueueUpdateMoney(context, activeUserId, entry)
+            SyncQueueManager.processQueue(context)
             onRefreshInsights(activeUserId, insightsTimeframe, false)
           }
         }
@@ -147,9 +154,11 @@ fun AppPageContent(
         onUpdateGoalMilestones()
         persistLocalCache()
         HapticHelper.vibrateSuccess(context)
+        onAlert(strings["expense_save_success"].ifBlank { "Pengeluaran berhasil disimpan! ✅" })
         if (activeUserId.isNotBlank()) {
           scope.launch(Dispatchers.IO) {
-            SupabaseRepository.insertMoneyEntry(activeUserId, entry)
+            SyncQueueManager.enqueueInsertMoney(context, activeUserId, entry)
+            SyncQueueManager.processQueue(context)
             onRefreshInsights(activeUserId, insightsTimeframe, false)
           }
         }
@@ -160,9 +169,11 @@ fun AppPageContent(
         onUpdateGoalMilestones()
         persistLocalCache()
         HapticHelper.vibrateSuccess(context)
+        onAlert(strings["expense_update_success"].ifBlank { "Pengeluaran berhasil diperbarui! ✅" })
         if (activeUserId.isNotBlank()) {
           scope.launch(Dispatchers.IO) {
-            SupabaseRepository.updateMoneyEntry(entry)
+            SyncQueueManager.enqueueUpdateMoney(context, activeUserId, entry)
+            SyncQueueManager.processQueue(context)
             onRefreshInsights(activeUserId, insightsTimeframe, false)
           }
         }
@@ -181,7 +192,8 @@ fun AppPageContent(
           }
           if (activeUserId.isNotBlank()) {
             scope.launch(Dispatchers.IO) {
-              SupabaseRepository.insertMoneyEntry(activeUserId, entry)
+              SyncQueueManager.enqueueInsertMoney(context, activeUserId, entry)
+              SyncQueueManager.processQueue(context)
             }
           }
         }
@@ -193,9 +205,12 @@ fun AppPageContent(
       onSave = { entry ->
         transferEntries.add(entry)
         persistLocalCache()
+        HapticHelper.vibrateSuccess(context)
+        onAlert(strings["transfer_save_success"].ifBlank { "Transfer dana berhasil disimpan! ✅" })
         if (activeUserId.isNotBlank()) {
           scope.launch(Dispatchers.IO) {
-            SupabaseRepository.insertMoneyEntry(activeUserId, entry)
+            SyncQueueManager.enqueueInsertMoney(context, activeUserId, entry)
+            SyncQueueManager.processQueue(context)
           }
         }
       },
@@ -203,9 +218,12 @@ fun AppPageContent(
         val i = transferEntries.indexOfFirst { it.id == entry.id }
         if (i >= 0) transferEntries[i] = entry
         persistLocalCache()
+        HapticHelper.vibrateSuccess(context)
+        onAlert(strings["transfer_update_success"].ifBlank { "Transfer dana berhasil diperbarui! ✅" })
         if (activeUserId.isNotBlank()) {
           scope.launch(Dispatchers.IO) {
-            SupabaseRepository.updateMoneyEntry(entry)
+            SyncQueueManager.enqueueUpdateMoney(context, activeUserId, entry)
+            SyncQueueManager.processQueue(context)
           }
         }
       },
@@ -224,6 +242,8 @@ fun AppPageContent(
         dreamEntries.add(entry)
         onUpdateGoalMilestones()
         persistLocalCache()
+        HapticHelper.vibrateSuccess(context)
+        onAlert(strings["dream_save_success"].ifBlank { "Target impian berhasil disimpan! ✅" })
         if (activeUserId.isNotBlank()) {
           scope.launch(Dispatchers.IO) {
             SupabaseRepository.insertDreamEntry(activeUserId, entry)
@@ -236,6 +256,8 @@ fun AppPageContent(
         if (i >= 0) dreamEntries[i] = entry
         onUpdateGoalMilestones()
         persistLocalCache()
+        HapticHelper.vibrateSuccess(context)
+        onAlert(strings["dream_update_success"].ifBlank { "Target impian berhasil diperbarui! ✅" })
         if (activeUserId.isNotBlank()) {
           scope.launch(Dispatchers.IO) {
             SupabaseRepository.updateDreamEntry(entry)
@@ -277,7 +299,7 @@ fun AppPageContent(
         val key = when (entry.type) {
           EntryType.Income -> "confirm_delete_income"
           EntryType.Expense -> "confirm_delete_expense"
-          EntryType.Transfer -> "confirm_delete_expense"
+          EntryType.Transfer -> "confirm_delete_transfer"
         }
         onRequestConfirm(strings[key]) {
           when (entry.type) {
@@ -289,10 +311,33 @@ fun AppPageContent(
           persistLocalCache()
           if (activeUserId.isNotBlank()) {
             scope.launch(Dispatchers.IO) {
-              SupabaseRepository.deleteMoneyEntry(entry.id)
+              SyncQueueManager.enqueueDeleteMoney(context, activeUserId, entry.id)
+              SyncQueueManager.processQueue(context)
               onRefreshInsights(activeUserId, insightsTimeframe, false)
             }
           }
+        }
+      },
+      onDeleteBatch = { batch ->
+        if (batch.isEmpty()) return@HistoryPage
+        onRequestConfirm("Hapus ${batch.size} transaksi yang dipilih?") {
+          val ids = batch.map { it.id }.toSet()
+          incomeEntries.removeAll { ids.contains(it.id) }
+          expenseEntries.removeAll { ids.contains(it.id) }
+          transferEntries.removeAll { ids.contains(it.id) }
+          onUpdateGoalMilestones()
+          persistLocalCache()
+          if (activeUserId.isNotBlank()) {
+            scope.launch(Dispatchers.IO) {
+              batch.forEach { entry ->
+                SyncQueueManager.enqueueDeleteMoney(context, activeUserId, entry.id)
+              }
+              SyncQueueManager.processQueue(context)
+              onRefreshInsights(activeUserId, insightsTimeframe, false)
+            }
+          }
+          HapticHelper.vibrateSuccess(context)
+          onToast("${batch.size} transaksi berhasil dihapus! 🗑️")
         }
       },
       onImportEntries = { importedEntries ->
@@ -343,6 +388,8 @@ fun AppPageContent(
       onSave = { entry ->
         loanEntries.add(entry)
         onPersistLoanEntries(activeUserId)
+        HapticHelper.vibrateSuccess(context)
+        onAlert(strings["loan_save_success"].ifBlank { "Catatan hutang/piutang berhasil disimpan! ✅" })
         if (activeUserId.isNotBlank()) {
           scope.launch(Dispatchers.IO) { onRefreshInsights(activeUserId, insightsTimeframe, false) }
         }
@@ -352,6 +399,8 @@ fun AppPageContent(
         if (i >= 0) {
           loanEntries[i] = entry
           onPersistLoanEntries(activeUserId)
+          HapticHelper.vibrateSuccess(context)
+          onAlert(strings["loan_update_success"].ifBlank { "Catatan hutang/piutang berhasil diperbarui! ✅" })
           if (activeUserId.isNotBlank()) {
             scope.launch(Dispatchers.IO) { onRefreshInsights(activeUserId, insightsTimeframe, false) }
           }
@@ -400,7 +449,30 @@ fun AppPageContent(
       strings = strings,
     )
 
-    Page.Calculator -> CalculatorPage()
+    Page.Calculator -> CalculatorPage(
+      onRecordToExpense = { shareAmount ->
+        val nowFmt = SimpleDateFormat("dd-MM-yyyy HH:mm:ss", Locale.getDefault()).format(Date())
+        val entry = MoneyEntry(
+          type = EntryType.Expense,
+          amount = shareAmount.toInt(),
+          date = nowFmt,
+          category = "Makanan & Minuman",
+          sourceOrMethod = "Transfer",
+          channelOrBank = "SeaBank",
+          note = "[Split Bill] Patungan",
+        )
+        expenseEntries.add(entry)
+        persistLocalCache()
+        if (activeUserId.isNotBlank()) {
+          scope.launch(Dispatchers.IO) {
+            SupabaseRepository.insertMoneyEntry(activeUserId, entry)
+          }
+        }
+        onToast("Berhasil mencatat bagian patungan Rp ${formatRupiah(shareAmount)} ke Pengeluaran!")
+        onNavigateTo(Page.Expense)
+      },
+      onToast = onToast,
+    )
 
     Page.Report -> ReportPage(
       incomeEntries,
@@ -439,6 +511,7 @@ fun AppPageContent(
           dreams = dreamEntries.toList(),
           loans = loanEntries.toList(),
           categoryBudgets = CategoryBudgetManager.loadBudgets(context),
+          initialBalances = InitialBalanceManager.getInitialBalances(context),
         )
         FullBackupHelper.shareBackup(context, backup)
       },
@@ -456,6 +529,9 @@ fun AppPageContent(
         backup.categoryBudgets.forEach { (cat, limit) ->
           CategoryBudgetManager.saveBudget(context, cat, limit)
         }
+        backup.initialBalances.forEach { (acc, bal) ->
+          InitialBalanceManager.setInitialBalance(context, acc, bal, userId = activeUserId, scope = scope)
+        }
         onUpdateGoalMilestones()
         onPersistLoanEntries(activeUserId)
         persistLocalCache()
@@ -469,6 +545,28 @@ fun AppPageContent(
             onRefreshInsights(activeUserId, insightsTimeframe, false)
           }
         }
+      },
+      onResetAllData = {
+        val oldEntries = (incomeEntries + expenseEntries + transferEntries).toList()
+        incomeEntries.clear()
+        expenseEntries.clear()
+        transferEntries.clear()
+        val initialBalances = InitialBalanceManager.getInitialBalances(context)
+        initialBalances.keys.forEach { acc ->
+          InitialBalanceManager.removeInitialBalance(context, acc, userId = activeUserId, scope = scope)
+        }
+        LocalDataCache.clear(context, activeUserId)
+        persistLocalCache()
+        onUpdateGoalMilestones()
+        HapticHelper.vibrateSuccess(context)
+        if (activeUserId.isNotBlank()) {
+          scope.launch(Dispatchers.IO) {
+            InitialBalanceManager.deleteAllInitialBalancesFromCloud(context, activeUserId)
+            oldEntries.forEach { runCatching { SupabaseRepository.deleteMoneyEntry(it.id) } }
+            onRefreshInsights(activeUserId, insightsTimeframe, false)
+          }
+        }
+        onToast("Semua transaksi & saldo awal telah dihapus. Anda memulai dari 0!")
       },
       onToast = onToast,
     )

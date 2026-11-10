@@ -62,6 +62,12 @@ fun TabunganAppShell(state: TabunganAppState) {
     fadeSeed = state.fadeSeed,
     pageFadeSeed = state.pageFadeSeed,
     scope = state.scope,
+    isAppLocked = state.isAppLocked,
+    onUnlockRequest = {
+      state.launchFingerprintAuth {
+        state.isAppLocked = false
+      }
+    },
     onNavigateTo = { page ->
       state.pendingEdit = if (page == Page.Income || page == Page.Expense || page == Page.Transfer) state.pendingEdit else null
       state.navigateTo(page)

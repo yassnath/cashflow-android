@@ -1,10 +1,6 @@
 package com.solvix.tabungan
 
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -14,55 +10,35 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.AccountBalanceWallet
-import androidx.compose.material.icons.rounded.KeyboardArrowDown
-import androidx.compose.material.icons.rounded.Person
-import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.layout.boundsInWindow
-import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.IntOffset
-import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import kotlin.math.roundToInt
 
 enum class Page(val label: String, val icon: String) {
   Dashboard("Dashboard", "🏠"),
-  Income("Pemasukkan", "💸"),
+  Income("Pemasukan", "💸"),
   Expense("Pengeluaran", "🧾"),
   Transfer("Transfer", "🔁"),
   Dreams("Target", "🌟"),
-  History("History", "📒"),
+  History("Riwayat", "📒"),
   Insights("Insights", "🧠"),
   Loans("Hutang", "💳"),
   AIChat("AI Chat", "🤖"),
@@ -76,203 +52,6 @@ enum class Page(val label: String, val icon: String) {
 fun Page.showHero(): Boolean = this == Page.Income || this == Page.Expense
 
 @Composable
-fun TopBar(
-  onProfileClick: () -> Unit,
-  showMenu: Boolean,
-  onDismissMenu: () -> Unit,
-  onNavigate: (Page) -> Unit,
-  onLogout: () -> Unit,
-  displayName: String,
-  displayUsername: String,
-  strings: AppStrings,
-  theme: ThemeName,
-  currentPage: Page,
-  isAdmin: Boolean,
-) {
-  val colors = LocalAppColors.current
-  var menuAnchorBounds by remember { mutableStateOf(IntRect.Zero) }
-  val isDark = isDarkTheme(theme)
-  Row(
-    modifier = Modifier
-      .fillMaxWidth()
-      .padding(top = 20.dp, bottom = 6.dp),
-    horizontalArrangement = Arrangement.SpaceBetween,
-    verticalAlignment = Alignment.CenterVertically,
-  ) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-      Box(
-        modifier = Modifier
-          .size(50.dp)
-          .clip(RoundedCornerShape(16.dp))
-          .background(if (isDark) colors.card else Color.White)
-          .border(
-            width = 1.dp,
-            color = if (isDark) colors.cardBorder else colors.accent.copy(alpha = 0.25f),
-            shape = RoundedCornerShape(16.dp),
-          ),
-        contentAlignment = Alignment.Center,
-      ) {
-        if (theme == ThemeName.StandardLight || theme == ThemeName.StandardDark) {
-          Icon(
-            imageVector = Icons.Rounded.AccountBalanceWallet,
-            contentDescription = null,
-            tint = colors.accent,
-            modifier = Modifier.size(26.dp),
-          )
-        } else {
-          Text(text = themeAppIcon(theme), fontSize = 26.sp)
-        }
-      }
-      Spacer(modifier = Modifier.width(12.dp))
-      Column {
-        Text(text = strings["app_name"], fontWeight = FontWeight.Bold, fontSize = 20.sp, color = colors.text)
-        Text(text = strings["app_tagline"], color = colors.muted, fontSize = 13.sp)
-      }
-    }
-
-    Box {
-      Row(
-        modifier = Modifier
-          .clip(RoundedCornerShape(999.dp))
-          .background(colors.accent.copy(alpha = 0.12f))
-          .border(1.dp, colors.accent.copy(alpha = 0.45f), RoundedCornerShape(999.dp))
-          .clickable(onClick = onProfileClick)
-          .padding(horizontal = 12.dp, vertical = 7.dp)
-          .onGloballyPositioned { coordinates ->
-            val rect = coordinates.boundsInWindow()
-            menuAnchorBounds = IntRect(
-              rect.left.roundToInt(),
-              rect.top.roundToInt(),
-              rect.right.roundToInt(),
-              rect.bottom.roundToInt(),
-            )
-          },
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(5.dp),
-      ) {
-        if (theme == ThemeName.StandardLight || theme == ThemeName.StandardDark) {
-          Icon(
-            imageVector = Icons.Rounded.Person,
-            contentDescription = null,
-            tint = colors.accent,
-            modifier = Modifier.size(17.dp),
-          )
-        }
-        Text(
-          text = if (displayUsername.isBlank()) strings["guest"] else displayUsername,
-          fontWeight = FontWeight.Bold,
-          fontSize = 13.sp,
-          color = colors.text,
-          maxLines = 1,
-        )
-        Icon(
-          imageVector = Icons.Rounded.KeyboardArrowDown,
-          contentDescription = null,
-          tint = colors.accent,
-          modifier = Modifier.size(16.dp),
-        )
-      }
-      DropDownMenuCard(
-        expanded = showMenu,
-        onDismiss = onDismissMenu,
-        modifier = Modifier.width(220.dp),
-        anchorBounds = menuAnchorBounds,
-        alignRight = true,
-        xOffsetDp = (-2).dp,
-        yOffsetDp = 10.dp,
-      ) {
-        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-          Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-          ) {
-            Column {
-              Text(text = displayName, fontWeight = FontWeight.Bold, color = colors.text)
-              Text(text = "@$displayUsername", color = colors.muted, fontSize = 12.sp)
-            }
-            Box(
-              modifier = Modifier
-                .size(28.dp)
-                .clip(CircleShape)
-                .background(colors.bg2)
-                .padding(4.dp)
-                .clickable { onDismissMenu() },
-              contentAlignment = Alignment.Center,
-            ) {
-              Text(text = "x", fontWeight = FontWeight.Bold, color = colors.text)
-            }
-          }
-          if (isAdmin) {
-            MenuItem(
-              text = strings["admin_logout"],
-              icon = themeSectionVisualIcon(theme, "logout", "🚪"),
-              color = colors.danger,
-            ) { onLogout() }
-          } else {
-            MenuItem(
-              text = "Transfer Saldo",
-              icon = themePageVisualIcon(theme, Page.Transfer),
-              active = currentPage == Page.Transfer,
-            ) { onNavigate(Page.Transfer) }
-            MenuItem(
-              text = strings["menu_history"],
-              icon = themePageVisualIcon(theme, Page.History),
-              active = currentPage == Page.History,
-            ) { onNavigate(Page.History) }
-            MenuItem(
-              text = strings["menu_theme"],
-              icon = themePageVisualIcon(theme, Page.Themes),
-              active = currentPage == Page.Themes,
-            ) { onNavigate(Page.Themes) }
-            MenuItem(
-              text = strings["menu_insights"],
-              icon = themePageVisualIcon(theme, Page.Insights),
-              active = currentPage == Page.Insights,
-            ) { onNavigate(Page.Insights) }
-            MenuItem(
-              text = strings["menu_loans"],
-              icon = themePageVisualIcon(theme, Page.Loans),
-              active = currentPage == Page.Loans,
-            ) { onNavigate(Page.Loans) }
-            MenuItem(
-              text = strings["menu_ai_chat"],
-              icon = themePageVisualIcon(theme, Page.AIChat),
-              active = currentPage == Page.AIChat,
-            ) { onNavigate(Page.AIChat) }
-            MenuItem(
-              text = strings["menu_calculator"],
-              icon = themePageVisualIcon(theme, Page.Calculator),
-              active = currentPage == Page.Calculator,
-            ) { onNavigate(Page.Calculator) }
-            MenuItem(
-              text = strings["menu_report"],
-              icon = themePageVisualIcon(theme, Page.Report),
-              active = currentPage == Page.Report,
-            ) { onNavigate(Page.Report) }
-            MenuItem(
-              text = strings["menu_profile"],
-              icon = themePageVisualIcon(theme, Page.Profile),
-              active = currentPage == Page.Profile,
-            ) { onNavigate(Page.Profile) }
-            MenuItem(
-              text = strings["menu_settings"],
-              icon = themePageVisualIcon(theme, Page.Settings),
-              active = currentPage == Page.Settings,
-            ) { onNavigate(Page.Settings) }
-            MenuItem(
-              text = strings["menu_logout"],
-              icon = themeSectionVisualIcon(theme, "logout", "🚪"),
-              color = colors.danger,
-            ) { onLogout() }
-          }
-        }
-      }
-    }
-  }
-}
-
-@Composable
 fun BottomNav(
   current: Page,
   onSelect: (Page) -> Unit,
@@ -281,7 +60,7 @@ fun BottomNav(
   modifier: Modifier = Modifier,
 ) {
   val colors = LocalAppColors.current
-  val items = listOf(Page.Dashboard, Page.Income, Page.Expense, Page.Dreams)
+  val items = listOf(Page.Dashboard, Page.Income, Page.Expense, Page.History)
   val navShape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)
   Row(
     modifier = modifier
@@ -318,7 +97,7 @@ fun BottomNav(
         Spacer(modifier = Modifier.height(3.dp))
         Text(
           text = pageLabel(item, strings),
-          fontSize = 13.sp,
+          fontSize = 11.sp,
           fontWeight = FontWeight.SemiBold,
           color = if (active) colors.text else colors.muted,
           maxLines = 1,
@@ -342,115 +121,12 @@ fun BottomNav(
   }
 }
 
-@Composable
-fun AmbientBackground() {
-  val colors = LocalAppColors.current
-  val transition = rememberInfiniteTransition(label = "ambient")
-  val float1 by transition.animateFloat(
-    initialValue = 0f,
-    targetValue = 20f,
-    animationSpec = infiniteRepeatable(tween(8000), RepeatMode.Reverse),
-    label = "float1",
-  )
-  val float2 by transition.animateFloat(
-    initialValue = 0f,
-    targetValue = -20f,
-    animationSpec = infiniteRepeatable(tween(9000), RepeatMode.Reverse),
-    label = "float2",
-  )
-  val sparkle by transition.animateFloat(
-    initialValue = 0.3f,
-    targetValue = 0.8f,
-    animationSpec = infiniteRepeatable(tween(4000), RepeatMode.Reverse),
-    label = "sparkle",
-  )
-
-  Box(modifier = Modifier.fillMaxSize()) {
-    Blob(
-      modifier = Modifier
-        .size(280.dp)
-        .offset {
-          IntOffset(
-            x = (-60).dp.roundToPx(),
-            y = (-80 + float1).dp.roundToPx(),
-          )
-        },
-      brush = Brush.radialGradient(
-        listOf(colors.accent, Color.Transparent),
-      ),
-    )
-    Blob(
-      modifier = Modifier
-        .size(280.dp)
-        .align(Alignment.BottomEnd)
-        .offset {
-          IntOffset(
-            x = 80.dp.roundToPx(),
-            y = (120 + float2).dp.roundToPx(),
-          )
-        },
-      brush = Brush.radialGradient(
-        listOf(colors.accent2, Color.Transparent),
-      ),
-    )
-    Blob(
-      modifier = Modifier
-        .size(280.dp)
-        .align(Alignment.CenterEnd)
-        .offset {
-          IntOffset(
-            x = 120.dp.roundToPx(),
-            y = float1.dp.roundToPx(),
-          )
-        },
-      brush = Brush.radialGradient(
-        listOf(Color(0xFF8AA7FF), Color.Transparent),
-      ),
-    )
-    Text(
-      text = "✦",
-      modifier = Modifier
-        .offset(x = 48.dp, y = 140.dp)
-        .alpha(sparkle),
-      color = Color.White.copy(alpha = 0.7f),
-      fontSize = 18.sp,
-    )
-    Text(
-      text = "✦",
-      modifier = Modifier
-        .offset(x = 260.dp, y = 360.dp)
-        .alpha(sparkle),
-      color = Color.White.copy(alpha = 0.7f),
-      fontSize = 18.sp,
-    )
-    Text(
-      text = "✦",
-      modifier = Modifier
-        .offset(x = 160.dp, y = 640.dp)
-        .alpha(sparkle),
-      color = Color.White.copy(alpha = 0.7f),
-      fontSize = 18.sp,
-    )
-  }
-}
-
-@Composable
-private fun Blob(modifier: Modifier, brush: Brush) {
-  Box(
-    modifier = modifier
-      .clip(CircleShape)
-      .blur(12.dp)
-      .background(brush)
-      .alpha(0.3f),
-  )
-}
-
 fun pageLabel(page: Page, strings: AppStrings): String {
   return when (page) {
     Page.Dashboard -> strings["page_dashboard"]
     Page.Income -> strings["page_income"]
     Page.Expense -> strings["page_expense"]
-    Page.Transfer -> "Transfer Saldo"
+    Page.Transfer -> strings["page_transfer"].ifBlank { "Transfer" }
     Page.Dreams -> strings["page_dreams"]
     Page.History -> strings["page_history"]
     Page.Insights -> strings["page_insights"]

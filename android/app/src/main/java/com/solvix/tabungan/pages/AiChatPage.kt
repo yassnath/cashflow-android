@@ -49,8 +49,9 @@ fun AiChatPage(
   strings: AppStrings,
 ) {
   val colors = LocalAppColors.current
-  val screenHeight = with(LocalDensity.current) { LocalWindowInfo.current.containerSize.height.toDp() }
-  val chatCardHeight = (screenHeight - 250.dp).coerceIn(340.dp, 560.dp)
+  val configuration = androidx.compose.ui.platform.LocalConfiguration.current
+  val screenHeight = configuration.screenHeightDp.dp
+  val chatCardHeight = (screenHeight * 0.52f).coerceIn(260.dp, 560.dp)
   var prompt by rememberSaveable { mutableStateOf("") }
   val messageScrollState = rememberScrollState()
 
@@ -106,7 +107,7 @@ fun AiChatPage(
                 ) {
                   Box(
                     modifier = Modifier
-                      .widthIn(max = 280.dp)
+                      .fillMaxWidth(0.85f)
                       .clip(RoundedCornerShape(14.dp))
                       .background(
                         if (userMessage) {

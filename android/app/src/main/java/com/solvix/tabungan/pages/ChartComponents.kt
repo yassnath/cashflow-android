@@ -147,6 +147,9 @@ fun LineChart(
         )
       }
 
+      val incomeLineColor = Color(0xFF10B981)
+      val expenseLineColor = colors.danger
+
       fun drawArea(points: List<Offset>, color: Color) {
         if (points.size < 2) return
         val path = androidx.compose.ui.graphics.Path().apply {
@@ -158,15 +161,15 @@ fun LineChart(
         drawPath(
           path = path,
           brush = Brush.verticalGradient(
-            colors = listOf(color.copy(alpha = 0.28f * progress), color.copy(alpha = 0.02f)),
+            colors = listOf(color.copy(alpha = 0.20f * progress), color.copy(alpha = 0.01f)),
             startY = 0f,
             endY = height,
           ),
         )
       }
 
-      drawArea(incomePoints, colors.accent)
-      drawArea(expensePoints, colors.danger)
+      drawArea(incomePoints, incomeLineColor)
+      drawArea(expensePoints, expenseLineColor)
 
       fun drawSmoothLine(points: List<Offset>, color: Color) {
         if (points.size < 2) return
@@ -182,43 +185,40 @@ fun LineChart(
         drawPath(
           path = path,
           color = color,
-          style = Stroke(width = 3.5f.dp.toPx(), cap = StrokeCap.Round),
+          style = Stroke(width = 2.5f.dp.toPx(), cap = StrokeCap.Round),
         )
       }
 
-      drawSmoothLine(incomePoints, colors.accent)
-      drawSmoothLine(expensePoints, colors.danger)
+      drawSmoothLine(incomePoints, incomeLineColor)
+      drawSmoothLine(expensePoints, expenseLineColor)
 
-      for (i in 0 until incomePoints.size - 1) {
-        drawLine(
-          color = colors.accent,
-          start = incomePoints[i],
-          end = incomePoints[i + 1],
-          strokeWidth = 3.5f.dp.toPx(),
-          cap = StrokeCap.Round,
-        )
+      if (progress > 0.6f) {
+        val dotAlpha = ((progress - 0.6f) / 0.4f).coerceIn(0f, 1f)
+        incomePoints.forEach { pt ->
+          drawCircle(
+            color = incomeLineColor.copy(alpha = dotAlpha),
+            radius = 3.5f.dp.toPx(),
+            center = pt,
+          )
+          drawCircle(
+            color = Color.White.copy(alpha = dotAlpha),
+            radius = 1.6f.dp.toPx(),
+            center = pt,
+          )
+        }
+        expensePoints.forEach { pt ->
+          drawCircle(
+            color = expenseLineColor.copy(alpha = dotAlpha),
+            radius = 3.5f.dp.toPx(),
+            center = pt,
+          )
+          drawCircle(
+            color = Color.White.copy(alpha = dotAlpha),
+            radius = 1.6f.dp.toPx(),
+            center = pt,
+          )
+        }
       }
-      for (i in 0 until expensePoints.size - 1) {
-        drawLine(
-          color = colors.danger,
-          start = expensePoints[i],
-          end = expensePoints[i + 1],
-          strokeWidth = 3.5f.dp.toPx(),
-          cap = StrokeCap.Round,
-        )
-      }
-      drawPoints(
-        points = incomePoints,
-        pointMode = androidx.compose.ui.graphics.PointMode.Points,
-        color = colors.accent,
-        strokeWidth = (12f * progress).coerceAtLeast(1f),
-      )
-      drawPoints(
-        points = expensePoints,
-        pointMode = androidx.compose.ui.graphics.PointMode.Points,
-        color = colors.danger,
-        strokeWidth = (12f * progress).coerceAtLeast(1f),
-      )
     }
     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
       series.labels.forEach { label ->

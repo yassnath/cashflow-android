@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+  <shortcut
+      android:shortcutId="shortcut_expense"
+      android:enabled="true"
+      android:icon="@drawable/ic_shortcut_expense"
+      android:shortcutShortLabel="@string/shortcut_expense_short"
+      android:shortcutLongLabel="@string/shortcut_expense_long">
+    <intent
+        android:action="android.intent.action.VIEW"
+        android:targetPackage="com.solvix.tabungan"
+        android:targetClass="com.solvix.tabungan.MainActivity">
+      <extra android:name="target_page" android:value="Expense" />
+    </intent>
+  </shortcut>
+
+  <shortcut
+      android:shortcutId="shortcut_income"
+      android:enabled="true"
+      android:icon="@drawable/ic_shortcut_income"
+      android:shortcutShortLabel="@string/shortcut_income_short"
+      android:shortcutLongLabel="@string/shortcut_income_long">
+    <intent
+        android:action="android.intent.action.VIEW"
+        android:targetPackage="com.solvix.tabungan"
+        android:targetClass="com.solvix.tabungan.MainActivity">
+      <extra android:name="target_page" android:value="Income" />
+    </intent>
+  </shortcut>
+
+  <shortcut
+      android:shortcutId="shortcut_transfer"
+      android:enabled="true"
+      android:icon="@drawable/ic_shortcut_transfer"
+      android:shortcutShortLabel="@string/shortcut_transfer_short"
+      android:shortcutLongLabel="@string/shortcut_transfer_long">
+    <intent
+        android:action="android.intent.action.VIEW"
+        android:targetPackage="com.solvix.tabungan"
+        android:targetClass="com.solvix.tabungan.MainActivity">
+      <extra android:name="target_page" android:value="Transfer" />
+    </intent>
+  </shortcut>
+
+  <shortcut
+      android:shortcutId="shortcut_calculator"
+      android:enabled="true"
+      android:icon="@drawable/ic_shortcut_calculator"
+      android:shortcutShortLabel="@string/shortcut_calculator_short"
+      android:shortcutLongLabel="@string/shortcut_calculator_long">
+    <intent
+        android:action="android.intent.action.VIEW"
+        android:targetPackage="com.solvix.tabungan"
+        android:targetClass="com.solvix.tabungan.MainActivity">
+      <extra android:name="target_page" android:value="Calculator" />
+    </intent>
+  </shortcut>
+</shortcuts>

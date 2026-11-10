@@ -12,6 +12,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -23,6 +24,7 @@ import com.solvix.tabungan.AppTextField
 import com.solvix.tabungan.DateField
 import com.solvix.tabungan.GradientButton
 import com.solvix.tabungan.LocalAppColors
+import com.solvix.tabungan.components.AccountAutoResearchPreview
 import com.solvix.tabungan.parseAmount
 
 @Composable
@@ -50,6 +52,8 @@ fun TransferFormCard(
   onCustomToAccountChange: (String) -> Unit = {},
 ) {
   val colors = LocalAppColors.current
+  val configuration = LocalConfiguration.current
+  val isSmallScreen = configuration.screenWidthDp < 360
   val amountValue = parseAmount(amount)
   val isFromValid = fromAccount.isNotBlank() && (fromAccount != "Lainnya" || customFromAccount.isNotBlank())
   val isToValid = toAccount.isNotBlank() && (toAccount != "Lainnya" || customToAccount.isNotBlank())
@@ -59,32 +63,37 @@ fun TransferFormCard(
     date.isNotBlank()
 
   AppCard {
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(if (isSmallScreen) 10.dp else 12.dp)) {
       Text(
-        text = "🔁 " + strings["transfer_card_title"].ifBlank { "Pindah Dana Antar Rekening / Dompet" },
-        fontSize = 14.sp,
+        text = "🔁 " + strings["transfer_card_title"].ifBlank { "Transfer Antar Rekening" },
+        fontSize = if (isSmallScreen) 13.sp else 14.sp,
         fontWeight = FontWeight.Bold,
         color = colors.text,
       )
 
       Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(if (isSmallScreen) 4.dp else 8.dp),
         verticalAlignment = Alignment.CenterVertically,
       ) {
         Column(modifier = Modifier.weight(1f)) {
           AppDropdown(
-            label = strings["transfer_from_label"].ifBlank { "Dari Akun / Dompet" },
+            label = strings["transfer_from_label"].ifBlank { "Dari Akun" },
             placeholder = strings["transfer_from_placeholder"].ifBlank { "Pilih Asal" },
             options = accountOptions,
             selected = fromAccount,
             onSelected = onFromAccountChange,
           )
         }
-        Text(text = "➔", fontSize = 16.sp, color = colors.accent, modifier = Modifier.padding(top = 18.dp))
+        Text(
+          text = "➔",
+          fontSize = if (isSmallScreen) 13.sp else 16.sp,
+          color = colors.accent,
+          modifier = Modifier.padding(top = if (isSmallScreen) 16.dp else 18.dp),
+        )
         Column(modifier = Modifier.weight(1f)) {
           AppDropdown(
-            label = strings["transfer_to_label"].ifBlank { "Ke Akun / Dompet" },
+            label = strings["transfer_to_label"].ifBlank { "Ke Akun" },
             placeholder = strings["transfer_to_placeholder"].ifBlank { "Pilih Tujuan" },
             options = accountOptions,
             selected = toAccount,
@@ -95,19 +104,27 @@ fun TransferFormCard(
 
       if (fromAccount == "Lainnya") {
         AppTextField(
-          label = strings["transfer_manual_from_label"].ifBlank { "Nama Rekening Asal Baru (Manual)" },
+          label = strings["transfer_manual_from_label"].ifBlank { "Nama Akun Asal" },
           value = customFromAccount,
           onValueChange = onCustomFromAccountChange,
-          placeholder = strings["transfer_manual_placeholder"].ifBlank { "Contoh: Bibit, Indodax, Bank Jatim" },
+          placeholder = strings["transfer_manual_placeholder"].ifBlank { "Contoh: Bank Neo, Solana, LinkAja" },
+        )
+        AccountAutoResearchPreview(
+          query = customFromAccount,
+          modifier = Modifier.padding(top = 2.dp),
         )
       }
 
       if (toAccount == "Lainnya") {
         AppTextField(
-          label = strings["transfer_manual_to_label"].ifBlank { "Nama Rekening Tujuan Baru (Manual)" },
+          label = strings["transfer_manual_to_label"].ifBlank { "Nama Akun Tujuan" },
           value = customToAccount,
           onValueChange = onCustomToAccountChange,
-          placeholder = strings["transfer_manual_placeholder"].ifBlank { "Contoh: Bibit, Indodax, Bank Jatim" },
+          placeholder = strings["transfer_manual_placeholder"].ifBlank { "Contoh: Bank Neo, Solana, LinkAja" },
+        )
+        AccountAutoResearchPreview(
+          query = customToAccount,
+          modifier = Modifier.padding(top = 2.dp),
         )
       }
 
@@ -147,7 +164,7 @@ fun TransferFormCard(
         text = if (isEditing) {
           strings["transfer_update_btn"].ifBlank { "Perbarui Transfer" }
         } else {
-          strings["transfer_save_btn"].ifBlank { "Simpan Transaksi Transfer" }
+          strings["transfer_save_btn"].ifBlank { "Simpan Transfer" }
         },
         enabled = isValid,
         onClick = onSubmit,

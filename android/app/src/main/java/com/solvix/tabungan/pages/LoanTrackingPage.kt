@@ -88,8 +88,8 @@ fun LoanTrackingPage(
   Column(modifier = Modifier.imePadding()) {
     SectionTitle(
       icon = themePageVisualIcon(LocalThemeName.current, Page.Loans),
-      title = "Hutang & Piutang",
-      subtitle = "Pantau pinjaman yang harus dibayar dan uang yang dipinjamkan",
+      title = strings["section_loans_title"].ifBlank { "Hutang & Piutang" },
+      subtitle = strings["section_loans_subtitle"].ifBlank { "Pantau pinjaman dan piutang." },
     )
 
     // Ringkasan Total Hutang & Piutang

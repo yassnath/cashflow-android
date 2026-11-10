@@ -53,11 +53,13 @@ fun SettingsPage(
   onDeleteAccount: () -> Unit,
   onExportBackup: () -> Unit = {},
   onRestoreBackup: (FullAppBackup) -> Unit = {},
+  onResetAllData: () -> Unit = {},
   onToast: (String) -> Unit = {},
 ) {
   val context = LocalContext.current
   val colors = LocalAppColors.current
   val deleteButtonRed = Color(0xFFD32F2F)
+  var showResetConfirmDialog by remember { mutableStateOf(false) }
   val prefs = remember { context.getSharedPreferences("tabungan_prefs", Context.MODE_PRIVATE) }
 
   var langIndex by rememberSaveable { mutableIntStateOf(0) }
@@ -314,6 +316,44 @@ fun SettingsPage(
 
     Spacer(modifier = Modifier.height(12.dp))
 
+    // Mulai dari 0 (Reset Semua Transaksi & Saldo)
+    AppCard {
+      Text(
+        text = strings["settings_reset_title"].ifBlank { "Reset Data Transaksi" },
+        fontWeight = FontWeight.Bold,
+        fontSize = 16.sp,
+        color = colors.danger,
+      )
+      Spacer(modifier = Modifier.height(6.dp))
+      Text(
+        text = strings["settings_reset_desc"].ifBlank {
+          "Hapus seluruh riwayat transaksi pemasukan, pengeluaran, transfer, dan saldo awal. Semua saldo akan kembali ke 0."
+        },
+        color = colors.muted,
+        fontSize = 12.sp,
+      )
+      Spacer(modifier = Modifier.height(12.dp))
+      Box(
+        modifier = Modifier
+          .fillMaxWidth()
+          .heightIn(min = 40.dp)
+          .clip(RoundedCornerShape(12.dp))
+          .background(colors.danger.copy(alpha = 0.12f))
+          .border(1.dp, colors.danger.copy(alpha = 0.35f), RoundedCornerShape(12.dp))
+          .clickable { showResetConfirmDialog = true },
+        contentAlignment = Alignment.Center,
+      ) {
+        Text(
+          text = strings["settings_reset_btn"].ifBlank { "🗑️ Reset Data ke 0" },
+          color = colors.danger,
+          fontWeight = FontWeight.Bold,
+          fontSize = 13.sp,
+        )
+      }
+    }
+
+    Spacer(modifier = Modifier.height(12.dp))
+
     AppCard {
       Text(text = strings["settings_delete_account"], fontWeight = FontWeight.Bold, fontSize = 16.sp, color = deleteButtonRed)
       Spacer(modifier = Modifier.height(8.dp))
@@ -331,5 +371,46 @@ fun SettingsPage(
         Text(text = strings["delete_account_action"], color = Color.White, fontWeight = FontWeight.Bold)
       }
     }
+  }
+
+  if (showResetConfirmDialog) {
+    androidx.compose.material3.AlertDialog(
+      onDismissRequest = { showResetConfirmDialog = false },
+      title = {
+        Text(
+          text = strings["settings_reset_confirm_title"].ifBlank { "Reset Semua Data Transaksi?" },
+          fontWeight = FontWeight.Bold,
+        )
+      },
+      text = {
+        Text(
+          text = strings["settings_reset_confirm_message"].ifBlank {
+            "Tindakan ini akan menghapus permanen seluruh transaksi dan saldo awal. Saldo akan kembali menjadi Rp 0. Lanjutkan?"
+          },
+          fontSize = 13.sp,
+        )
+      },
+      confirmButton = {
+        androidx.compose.material3.TextButton(
+          onClick = {
+            showResetConfirmDialog = false
+            onResetAllData()
+          }
+        ) {
+          Text(
+            text = strings["settings_reset_confirm_action"].ifBlank { "Ya, Hapus Semua" },
+            color = colors.danger,
+            fontWeight = FontWeight.Bold,
+          )
+        }
+      },
+      dismissButton = {
+        androidx.compose.material3.TextButton(
+          onClick = { showResetConfirmDialog = false }
+        ) {
+          Text(text = strings["confirm_cancel"].ifBlank { "Batal" }, color = colors.text)
+        }
+      }
+    )
   }
 }

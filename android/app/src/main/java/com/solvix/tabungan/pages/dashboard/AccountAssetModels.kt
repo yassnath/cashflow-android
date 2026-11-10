@@ -1,6 +1,8 @@
 package com.solvix.tabungan.pages.dashboard
 
 import androidx.compose.ui.graphics.Color
+import com.solvix.tabungan.AccountCategory
+import com.solvix.tabungan.AccountIconManager
 import com.solvix.tabungan.MoneyEntry
 
 enum class BankWalletBrand {
@@ -90,10 +92,12 @@ fun calculateAccountAssets(
   expenseEntries: List<MoneyEntry>,
   transferEntries: List<MoneyEntry>,
   targetNetBalance: Long? = null,
+  initialBalances: Map<String, Long> = emptyMap(),
 ): List<AccountAssetItem> {
   val totalIncome = incomeEntries.sumOf { it.amount.toLong() }
   val totalExpense = expenseEntries.sumOf { it.amount.toLong() }
-  val net = targetNetBalance ?: (totalIncome - totalExpense)
+  val totalInitial = initialBalances.values.sum()
+  val net = targetNetBalance ?: (totalInitial + totalIncome - totalExpense)
 
   // Jika net balance tidak positif (0 atau minus), tidak ada aset bersih positif yang ditampilkan
   if (net <= 0L) {
@@ -106,34 +110,34 @@ fun calculateAccountAssets(
     val trimmed = raw.trim()
     val lower = trimmed.lowercase()
     return when {
-      trimmed.isBlank() || trimmed == "-" ||
-        lower == "lainnya" || lower == "other" ||
-        lower == "e-wallet" || lower == "ewallet" ||
-        lower == "transfer" || lower == "transfer bank" ||
-        lower == "qris" || lower == "debit" || lower == "kredit" || lower == "credit" ||
-        lower == "gaji" || lower == "salary" || lower == "bisnis" || lower == "business" ||
-        lower == "freelance" || lower == "bonus" || lower == "tabungan" || lower == "savings" ||
-        lower == "investasi" || lower == "investment" ||
-        "seabank" in lower || "sea bank" in lower -> "SeaBank"
-      lower == "stocks" || lower == "stock" -> "Saham"
-      lower == "dompet tunai" || lower == "tunai" || lower == "kas" || lower == "dompet" -> "Cash"
-      lower == "go-pay" || lower == "gojek" -> "GoPay"
-      lower == "shopee pay" || lower == "spay" -> "ShopeePay"
-      lower == "link aja" -> "LinkAja"
-      lower == "kripto" || lower == "bitcoin" || lower == "btc" -> "Crypto"
-      lower == "bca" -> "BCA"
-      lower == "mandiri" -> "Mandiri"
-      lower == "bri" -> "BRI"
-      lower == "bni" -> "BNI"
-      lower == "bsi" -> "BSI"
-      lower == "jago" || lower == "bank jago" -> "Jago"
-      lower == "jenius" -> "Jenius"
-      lower == "cimb" || lower == "cimb niaga" -> "CIMB"
-      lower == "permata" || lower == "bank permata" -> "Permata"
-      lower == "dana" -> "DANA"
-      lower == "ovo" -> "OVO"
+      trimmed.isBlank() || trimmed == "-" || lower == "lainnya" || lower == "other" -> "Lainnya"
+      lower == "e-wallet" || lower == "ewallet" -> "E-Wallet"
+      "seabank" in lower || "sea bank" in lower -> "SeaBank"
+      "bca" in lower -> "Bank BCA"
+      "mandiri" in lower -> "Bank Mandiri"
+      "bri" in lower -> "Bank BRI"
+      "bni" in lower -> "Bank BNI"
+      "bsi" in lower -> "Bank BSI"
+      "jago" in lower -> "Bank Jago"
+      "jenius" in lower -> "Jenius"
+      "cimb" in lower || "niaga" in lower -> "CIMB Niaga"
+      "permata" in lower -> "Bank Permata"
+      "dana" in lower -> "DANA"
+      "ovo" in lower -> "OVO"
+      "gopay" in lower || "go-pay" in lower || "gojek" in lower -> "GoPay"
+      "shopee" in lower || "spay" in lower -> "ShopeePay"
+      "linkaja" in lower || "link aja" in lower -> "LinkAja"
+      "saham" in lower || "stock" in lower || "reksadana" in lower || "investasi" in lower -> "Investasi / Saham"
+      "kripto" in lower || "crypto" in lower || "bitcoin" in lower || "btc" in lower -> "Aset Kripto (Crypto)"
+      "cash" in lower || "tunai" in lower || "dompet" in lower || "kas" in lower -> "Uang Tunai (Cash)"
       else -> trimmed
     }
+  }
+
+  // Muat saldo awal per akun
+  initialBalances.forEach { (rawAcc, amount) ->
+    val acc = normalizeAccount(rawAcc)
+    balances[acc] = (balances[acc] ?: 0L) + amount
   }
 
   incomeEntries.forEach { entry ->
@@ -155,35 +159,7 @@ fun calculateAccountAssets(
     balances[toAcc] = (balances[toAcc] ?: 0L) + entry.amount
   }
 
-  // 1. Serap defisit dari akun sekunder ke SeaBank (akun likuiditas utama).
-  // Akun sekunder yang bernilai negatif (karena pengeluaran dicatat tanpa saldo awal di akun tsb)
-  // hakikatnya diambil dari dana likuiditas utama pengguna di SeaBank.
-  val secondaryDeficit = balances
-    .filter { it.key != "SeaBank" && it.value < 0L }
-    .values
-    .sum()
-
-  balances["SeaBank"] = (balances["SeaBank"] ?: 0L) + secondaryDeficit
-  // Hapus semua akun sekunder yang bersaldo 0 atau negatif (jangan tampilkan akun kosong/minus)
-  balances.entries.removeIf { it.key != "SeaBank" && it.value <= 0L }
-
-  // 2. Jika SeaBank sendiri bersaldo <= 0 namun net > 0 (karena aset tersimpan di Crypto/Saham/dll)
-  if ((balances["SeaBank"] ?: 0L) <= 0L) {
-    val seaBankDeficit = balances.remove("SeaBank") ?: 0L
-    if (seaBankDeficit < 0L && balances.isNotEmpty()) {
-      val maxKey = balances.maxByOrNull { it.value }?.key
-      if (maxKey != null) {
-        balances[maxKey] = (balances[maxKey] ?: 0L) + seaBankDeficit
-      }
-    }
-  }
-
-  // 3. Jika setelah pembersihan belum ada akun tersisa namun net > 0, tempatkan ke SeaBank
-  if (balances.isEmpty()) {
-    balances["SeaBank"] = net
-  }
-
-  // 4. Bangun daftar akun positif
+  // 1. Bangun daftar akun yang memiliki saldo positif nyata
   val result = balances
     .filter {
       it.key.isNotBlank() &&
@@ -193,60 +169,45 @@ fun calculateAccountAssets(
     }
     .map { (name, bal) ->
       val brand = detectBrand(name)
+      val researched = AccountIconManager.researchAccount(name)
+      val color = if (researched.category != AccountCategory.OTHER) researched.brandColor else getBrandColor(brand)
       AccountAssetItem(
         name = name,
         balance = bal,
         brand = brand,
-        brandColor = getBrandColor(brand),
+        brandColor = color,
       )
     }
     .toMutableList()
 
-  // 5. Rekonsiliasi ketat agar total nominal aset PERSIS sama dengan net balance
+  // 2. Jika belum ada akun positif namun net total > 0 (misal transaksi belum ditentukan akunnya)
+  if (result.isEmpty() && net > 0L) {
+    // Cari akun default dari initial balance yang diatur user atau fallback ke Uang Tunai
+    val fallbackName = initialBalances.keys.firstOrNull { it.isNotBlank() }
+      ?: incomeEntries.firstOrNull { it.channelOrBank.isNotBlank() }?.channelOrBank
+      ?: "Uang Tunai (Cash)"
+    val brand = detectBrand(fallbackName)
+    val researched = AccountIconManager.researchAccount(fallbackName)
+    val color = if (researched.category != AccountCategory.OTHER) researched.brandColor else getBrandColor(brand)
+    result.add(
+      AccountAssetItem(
+        name = fallbackName,
+        balance = net,
+        brand = brand,
+        brandColor = color,
+      )
+    )
+  }
+
+  // 3. Rekonsiliasi ketat agar total nominal aset PERSIS sama dengan net balance
+  // Jika ada selisih, sesuaikan ke akun terbesar yang sudah ada (tanpa menambah akun random baru)
   val currentSum = result.sumOf { it.balance }
   val discrepancy = net - currentSum
-  if (discrepancy != 0L) {
-    val seaBankIndex = result.indexOfFirst { it.brand == BankWalletBrand.SEABANK }
-    if (seaBankIndex >= 0) {
-      val newBal = result[seaBankIndex].balance + discrepancy
-      if (newBal > 0L) {
-        result[seaBankIndex] = result[seaBankIndex].copy(balance = newBal)
-      } else {
-        result.removeAt(seaBankIndex)
-        if (result.isNotEmpty()) {
-          val maxIdx = result.indices.maxByOrNull { result[it].balance } ?: 0
-          val adjBal = result[maxIdx].balance + (net - result.sumOf { it.balance })
-          if (adjBal > 0L) {
-            result[maxIdx] = result[maxIdx].copy(balance = adjBal)
-          }
-        } else {
-          result.add(
-            AccountAssetItem(
-              name = "SeaBank",
-              balance = net,
-              brand = BankWalletBrand.SEABANK,
-              brandColor = getBrandColor(BankWalletBrand.SEABANK),
-            )
-          )
-        }
-      }
-    } else if (discrepancy > 0L) {
-      result.add(
-        AccountAssetItem(
-          name = "SeaBank",
-          balance = discrepancy,
-          brand = BankWalletBrand.SEABANK,
-          brandColor = getBrandColor(BankWalletBrand.SEABANK),
-        )
-      )
-    } else {
-      if (result.isNotEmpty()) {
-        val maxIdx = result.indices.maxByOrNull { result[it].balance } ?: 0
-        val adjBal = result[maxIdx].balance + discrepancy
-        if (adjBal > 0L) {
-          result[maxIdx] = result[maxIdx].copy(balance = adjBal)
-        }
-      }
+  if (discrepancy != 0L && result.isNotEmpty()) {
+    val maxIdx = result.indices.maxByOrNull { result[it].balance } ?: 0
+    val adjBal = result[maxIdx].balance + discrepancy
+    if (adjBal > 0L) {
+      result[maxIdx] = result[maxIdx].copy(balance = adjBal)
     }
   }
 

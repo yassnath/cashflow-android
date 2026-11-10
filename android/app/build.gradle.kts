@@ -162,6 +162,7 @@ dependencies {
   implementation("io.github.jan-tennert.supabase:postgrest-kt:2.4.1")
   implementation("io.ktor:ktor-client-okhttp:2.3.12")
   implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
+  implementation("com.google.android.gms:play-services-mlkit-text-recognition:19.0.0")
   coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.5")
   testImplementation("junit:junit:4.13.2")
   androidTestImplementation("androidx.test.ext:junit:1.3.0")

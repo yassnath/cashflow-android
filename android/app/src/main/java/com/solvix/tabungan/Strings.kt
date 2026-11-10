@@ -6,7 +6,7 @@ import java.util.Locale
 enum class AppLanguage { ID, EN }
 
 data class AppStrings(val map: Map<String, String>) {
-  operator fun get(key: String): String = map[key] ?: key
+  operator fun get(key: String): String = map[key] ?: ""
 }
 
 val LocalStrings = staticCompositionLocalOf { stringsFor(AppLanguage.ID) }

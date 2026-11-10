@@ -1,15 +1,20 @@
 package com.solvix.tabungan
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.solvix.tabungan.pages.dashboard.DashboardAssetsCard
+import com.solvix.tabungan.pages.dashboard.DashboardBurnRateCard
+import com.solvix.tabungan.pages.dashboard.DashboardFabSpeedDial
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
@@ -41,10 +46,13 @@ fun DashboardPage(
   onNavigateTo: (Page) -> Unit,
   transferEntries: List<MoneyEntry> = emptyList(),
 ) {
-  // -- Ringkasan Finansial Utama --
+  val context = LocalContext.current
+  val initialVersion by InitialBalanceManager.versionState
   val totalIncome = incomeEntries.sumOf { it.amount }
   val totalExpense = expenseEntries.sumOf { it.amount }
   val netBalance = totalIncome - totalExpense
+  val totalInitial = remember(initialVersion) { InitialBalanceManager.getTotalInitialBalance(context) }
+  val effectiveNetBalance = (netBalance.toLong() + totalInitial).toInt()
 
   // -- Filter Transaksi Bulan Ini --
   val now = Calendar.getInstance()
@@ -70,46 +78,54 @@ fun DashboardPage(
     ?: currentUser?.username?.takeIf { it.isNotBlank() }
     ?: strings["guest"]
 
-  Column(
-    modifier = Modifier.fillMaxWidth(),
-    verticalArrangement = Arrangement.spacedBy(16.dp),
-  ) {
-    // 1. Sapaan & Saldo Bersih Beranimasi
-    DashboardBanner(
-      displayName = displayName,
-      todayFormatted = todayFormatted,
-      netBalance = netBalance,
-      totalIncome = totalIncome,
-      totalExpense = totalExpense,
-      strings = strings,
-      locale = locale,
-    )
+  Box(modifier = Modifier.fillMaxWidth()) {
+    Column(
+      modifier = Modifier.fillMaxWidth(),
+      verticalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
+      // 1. Sapaan & Saldo Bersih Beranimasi
+      DashboardBanner(
+        displayName = displayName,
+        todayFormatted = todayFormatted,
+        netBalance = effectiveNetBalance,
+        totalIncome = totalIncome,
+        totalExpense = totalExpense,
+        strings = strings,
+        locale = locale,
+      )
 
-    // 2. Baris Aksi Cepat
-    DashboardQuickActions(
-      strings = strings,
-      onNavigateTo = onNavigateTo,
-    )
+      // 2. Baris Aksi Cepat
+      DashboardQuickActions(
+        strings = strings,
+        onNavigateTo = onNavigateTo,
+      )
 
-    // 3. Aset & Saldo Akun / Dompet
-    DashboardAssetsCard(
-      incomeEntries = incomeEntries,
-      expenseEntries = expenseEntries,
-      transferEntries = transferEntries,
-      netBalance = netBalance.toLong(),
-      strings = strings,
-      onTransferClick = { onNavigateTo(Page.Transfer) },
-    )
+      // 3. Aset & Saldo Akun / Dompet
+      DashboardAssetsCard(
+        incomeEntries = incomeEntries,
+        expenseEntries = expenseEntries,
+        transferEntries = transferEntries,
+        netBalance = netBalance.toLong() + totalInitial,
+        strings = strings,
+        onTransferClick = { onNavigateTo(Page.Transfer) },
+        userId = currentUser?.id.orEmpty(),
+      )
 
-    // 4. Skor Kesehatan Finansial & Rasio Tabungan
-    DashboardFinancialHealthCard(
-      totalIncome = totalIncome,
-      totalExpense = totalExpense,
-      thisMonthExpenses = thisMonthExpenses,
-      strings = strings,
-    )
+      // 4. Skor Kesehatan Finansial & Rasio Tabungan
+      DashboardFinancialHealthCard(
+        totalIncome = totalIncome,
+        totalExpense = totalExpense,
+        thisMonthExpenses = thisMonthExpenses,
+        strings = strings,
+      )
 
-    // 4. Donut Chart - Pemasukkan vs Pengeluaran
+      // 4b. Analisis Burn Rate & Proyeksi Arus Kas
+      DashboardBurnRateCard(
+        thisMonthExpenses = thisMonthExpenses,
+        netBalance = netBalance.toLong() + totalInitial,
+      )
+
+      // 5. Donut Chart - Pemasukan vs Pengeluaran
     DashboardFlowDonutChart(
       totalIncome = totalIncome,
       totalExpense = totalExpense,
@@ -177,4 +193,11 @@ fun DashboardPage(
 
     Spacer(modifier = Modifier.height(16.dp))
   }
+
+  // Floating Action Button Speed Dial (Ergonomis satu tangan)
+  DashboardFabSpeedDial(
+    onNavigateTo = onNavigateTo,
+    modifier = Modifier.fillMaxWidth(),
+  )
+}
 }

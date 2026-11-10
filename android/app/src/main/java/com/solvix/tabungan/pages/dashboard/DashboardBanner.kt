@@ -219,14 +219,14 @@ fun DashboardBanner(
                   contentAlignment = Alignment.Center,
                 ) {
                   Icon(
-                    imageVector = Icons.Rounded.ArrowDownward,
+                    imageVector = Icons.Rounded.ArrowUpward,
                     contentDescription = null,
                     tint = incomeColor,
                     modifier = Modifier.size(15.dp),
                   )
                 }
               } else {
-                Text(text = "↓", fontSize = 16.sp, color = incomeColor, fontWeight = FontWeight.Bold)
+                Text(text = "↑", fontSize = 16.sp, color = incomeColor, fontWeight = FontWeight.Bold)
               }
               Spacer(modifier = Modifier.width(6.dp))
               Column {
@@ -264,14 +264,14 @@ fun DashboardBanner(
                   contentAlignment = Alignment.Center,
                 ) {
                   Icon(
-                    imageVector = Icons.Rounded.ArrowUpward,
+                    imageVector = Icons.Rounded.ArrowDownward,
                     contentDescription = null,
                     tint = expenseColor,
                     modifier = Modifier.size(15.dp),
                   )
                 }
               } else {
-                Text(text = "↑", fontSize = 16.sp, color = expenseColor, fontWeight = FontWeight.Bold)
+                Text(text = "↓", fontSize = 16.sp, color = expenseColor, fontWeight = FontWeight.Bold)
               }
               Spacer(modifier = Modifier.width(6.dp))
               Column {

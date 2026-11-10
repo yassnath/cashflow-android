@@ -1,6 +1,7 @@
 package com.solvix.tabungan
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -30,6 +31,9 @@ fun EntryCard(
   onEdit: (MoneyEntry) -> Unit,
   onDelete: (MoneyEntry) -> Unit,
   onPreviewReceipt: (String) -> Unit = {},
+  isSelectionMode: Boolean = false,
+  isSelected: Boolean = false,
+  onToggleSelect: () -> Unit = {},
 ) {
   val colors = LocalAppColors.current
   val isIncome = entry.type == EntryType.Income
@@ -52,7 +56,25 @@ fun EntryCard(
     colors.danger.copy(alpha = 0.2f)
   }
 
-  AppCard(shape = RoundedCornerShape(AppDimens.radiusMd)) {
+  val cardBorder = if (isSelectionMode && isSelected) {
+    colors.accent
+  } else {
+    colors.cardBorder
+  }
+
+  Box(
+    modifier = Modifier
+      .fillMaxWidth()
+      .clip(RoundedCornerShape(AppDimens.radiusMd))
+      .background(if (isSelectionMode && isSelected) colors.accent.copy(alpha = 0.08f) else colors.card)
+      .border(
+        width = if (isSelectionMode && isSelected) 1.5.dp else 1.dp,
+        color = cardBorder,
+        shape = RoundedCornerShape(AppDimens.radiusMd)
+      )
+      .clickable(enabled = isSelectionMode, onClick = onToggleSelect)
+      .padding(AppDimens.cardPadding)
+  ) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
       Row(
         modifier = Modifier.fillMaxWidth(),
@@ -60,6 +82,25 @@ fun EntryCard(
         verticalAlignment = Alignment.CenterVertically,
       ) {
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+          if (isSelectionMode) {
+            Box(
+              modifier = Modifier
+                .size(24.dp)
+                .clip(CircleShape)
+                .background(if (isSelected) colors.accent else Color.Transparent)
+                .border(
+                  width = 2.dp,
+                  color = if (isSelected) colors.accent else colors.muted.copy(alpha = 0.5f),
+                  shape = CircleShape,
+                ),
+              contentAlignment = Alignment.Center,
+            ) {
+              if (isSelected) {
+                Text(text = "✓", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+              }
+            }
+          }
+
           Box(
             modifier = Modifier
               .size(28.dp)
@@ -74,8 +115,30 @@ fun EntryCard(
         Text(text = "$amountPrefix${formatRupiah(entry.amount)}", fontWeight = FontWeight.Bold, color = amountColor)
       }
 
-      Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-        Text(text = "${entry.sourceOrMethod} • ${entry.channelOrBank}", color = colors.muted, fontSize = 12.sp)
+      Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+      ) {
+        Row(
+          verticalAlignment = Alignment.CenterVertically,
+          horizontalArrangement = Arrangement.spacedBy(6.dp),
+          modifier = Modifier.weight(1f, fill = false),
+        ) {
+          if (entry.channelOrBank.isNotBlank() && entry.channelOrBank != "-") {
+            com.solvix.tabungan.pages.dashboard.AccountBrandLogo(
+              accountName = entry.channelOrBank,
+              size = 18.dp,
+            )
+          }
+          Text(
+            text = "${entry.sourceOrMethod} • ${entry.channelOrBank}",
+            color = colors.muted,
+            fontSize = 12.sp,
+            maxLines = 1,
+            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+          )
+        }
         Text(text = entry.date, color = colors.muted, fontSize = 12.sp)
       }
 
@@ -107,28 +170,30 @@ fun EntryCard(
         }
       }
 
-      Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-        Box(
-          modifier = Modifier
-            .weight(1f)
-            .heightIn(min = 38.dp)
-            .clip(RoundedCornerShape(10.dp))
-            .background(Brush.linearGradient(listOf(colors.accent, colors.accent2)))
-            .clickable { onEdit(entry) },
-          contentAlignment = Alignment.Center,
-        ) {
-          Text(text = strings["edit"], color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp)
-        }
-        Box(
-          modifier = Modifier
-            .weight(1f)
-            .heightIn(min = 38.dp)
-            .clip(RoundedCornerShape(10.dp))
-            .background(Brush.linearGradient(listOf(colors.danger, colors.danger.copy(alpha = 0.85f))))
-            .clickable { onDelete(entry) },
-          contentAlignment = Alignment.Center,
-        ) {
-          Text(text = strings["delete"], color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+      if (!isSelectionMode) {
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+          Box(
+            modifier = Modifier
+              .weight(1f)
+              .heightIn(min = 38.dp)
+              .clip(RoundedCornerShape(10.dp))
+              .background(Brush.linearGradient(listOf(colors.accent, colors.accent2)))
+              .clickable { onEdit(entry) },
+            contentAlignment = Alignment.Center,
+          ) {
+            Text(text = strings["edit"], color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+          }
+          Box(
+            modifier = Modifier
+              .weight(1f)
+              .heightIn(min = 38.dp)
+              .clip(RoundedCornerShape(10.dp))
+              .background(Brush.linearGradient(listOf(colors.danger, colors.danger.copy(alpha = 0.85f))))
+              .clickable { onDelete(entry) },
+            contentAlignment = Alignment.Center,
+          ) {
+            Text(text = strings["delete"], color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+          }
         }
       }
     }

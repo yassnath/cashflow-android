@@ -1,4 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
   <string name="app_name">CashFlow</string>
+  <string name="shortcut_expense_short">Pengeluaran</string>
+  <string name="shortcut_expense_long">Catat Pengeluaran</string>
+  <string name="shortcut_income_short">Pemasukan</string>
+  <string name="shortcut_income_long">Catat Pemasukan</string>
+  <string name="shortcut_transfer_short">Transfer</string>
+  <string name="shortcut_transfer_long">Transfer Saldo</string>
+  <string name="shortcut_calculator_short">Kalkulator</string>
+  <string name="shortcut_calculator_long">Buka Kalkulator</string>
 </resources>

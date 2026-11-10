@@ -33,11 +33,12 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import com.solvix.tabungan.components.AccountAutoResearchPreview
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
-import com.solvix.tabungan.components.AddCategoryDialog
+import com.solvix.tabungan.components.ReceiptAttachmentField
 
 @Composable
 fun IncomePage(
@@ -62,7 +63,7 @@ fun IncomePage(
   var editingCreatedAt by rememberSaveable { mutableStateOf<String?>(null) }
 
   var categoriesList by remember { mutableStateOf(CategoryManager.getIncomeCategories(context)) }
-  var showAddCategoryDialog by remember { mutableStateOf(false) }
+  var customCategoryInput by rememberSaveable { mutableStateOf("") }
 
   var customSourceInput by rememberSaveable { mutableStateOf("") }
   var customChannelInput by rememberSaveable { mutableStateOf("") }
@@ -84,6 +85,10 @@ fun IncomePage(
       amount = entry.amount.toString()
       date = entry.date
       category = entry.category
+      if (entry.category.isNotBlank() && !categoriesList.contains(entry.category)) {
+        CategoryManager.addIncomeCategory(context, entry.category)
+        categoriesList = CategoryManager.getIncomeCategories(context)
+      }
       source = entry.sourceOrMethod
       channel = entry.channelOrBank
       note = entry.note
@@ -109,48 +114,29 @@ fun IncomePage(
           keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
         )
         DateField(strings["label_date"], value = date, onValueChange = { date = it }, placeholder = strings["placeholder_date"])
-        AppTextField(strings["label_category"], value = category, onValueChange = { category = it }, placeholder = strings["placeholder_category_income"])
 
-        // Quick Category Chips & "+ Kategori Baru"
-        Row(
-          modifier = Modifier
-            .fillMaxWidth()
-            .horizontalScroll(rememberScrollState()),
-          horizontalArrangement = Arrangement.spacedBy(6.dp),
-          verticalAlignment = Alignment.CenterVertically,
-        ) {
-          // Tombol Tambah Kategori Kustom
-          Box(
-            modifier = Modifier
-              .clip(RoundedCornerShape(999.dp))
-              .background(colors.accent.copy(alpha = 0.12f))
-              .border(1.dp, colors.accent.copy(alpha = 0.4f), RoundedCornerShape(999.dp))
-              .clickable { showAddCategoryDialog = true }
-              .padding(horizontal = 10.dp, vertical = 5.dp),
-            contentAlignment = Alignment.Center,
-          ) {
-            Text(text = strings["category_add_button"].ifBlank { "+ Kategori" }, fontSize = 11.sp, fontWeight = FontWeight.Bold, color = colors.accent)
-          }
-
-          categoriesList.forEach { cat ->
-            val isSelected = cat.equals(category, ignoreCase = true)
-            Box(
-              modifier = Modifier
-                .clip(RoundedCornerShape(999.dp))
-                .background(if (isSelected) colors.accent else colors.bg2)
-                .clickable { category = cat }
-                .padding(horizontal = 10.dp, vertical = 5.dp),
-              contentAlignment = Alignment.Center,
-            ) {
-              Text(
-                text = cat,
-                fontSize = 11.sp,
-                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                color = if (isSelected) Color.White else colors.text,
-              )
-            }
-          }
+        val otherCategoryLabel = if (language == AppLanguage.ID) "Lainnya" else "Other"
+        val categoryOptions = remember(categoriesList, otherCategoryLabel) {
+          (categoriesList.filter { it != otherCategoryLabel } + listOf(otherCategoryLabel)).distinct()
         }
+
+        AppDropdown(
+          label = strings["label_category"].ifBlank { if (language == AppLanguage.ID) "Kategori Pemasukan" else "Income Category" },
+          placeholder = strings["placeholder_category_income"].ifBlank { if (language == AppLanguage.ID) "Pilih Kategori" else "Select Category" },
+          options = categoryOptions,
+          selected = category,
+          onSelected = { sel -> category = sel },
+        )
+
+        if (category == otherCategoryLabel) {
+          AppTextField(
+            label = if (language == AppLanguage.ID) "Nama Kategori Baru" else "New Category Name",
+            value = customCategoryInput,
+            onValueChange = { customCategoryInput = it },
+            placeholder = if (language == AppLanguage.ID) "Contoh: Gaji, Bonus, Penjualan" else "e.g. Salary, Bonus, Sales",
+          )
+        }
+
         val otherLabel = if (language == AppLanguage.ID) "Lainnya" else "Other"
         val baseSources = optionList(language, OptionList.IncomeSources)
         val sourceOptions = remember(baseSources, customSourcesList) {
@@ -171,7 +157,7 @@ fun IncomePage(
         )
         if (source == otherLabel) {
           AppTextField(
-            label = if (language == AppLanguage.ID) "Nama Sumber Baru (Manual)" else "New Source Name (Manual)",
+            label = if (language == AppLanguage.ID) "Nama Sumber Baru" else "New Source Name",
             value = customSourceInput,
             onValueChange = { customSourceInput = it },
             placeholder = if (language == AppLanguage.ID) "Contoh: Dividen, Royalti" else "e.g. Dividend, Royalty",
@@ -187,10 +173,14 @@ fun IncomePage(
         )
         if (channel == otherLabel) {
           AppTextField(
-            label = if (language == AppLanguage.ID) "Nama Bank / Dompet Baru (Manual)" else "New Bank / Wallet Name (Manual)",
+            label = if (language == AppLanguage.ID) "Nama Akun / Bank Baru" else "New Account / Bank Name",
             value = customChannelInput,
             onValueChange = { customChannelInput = it },
-            placeholder = if (language == AppLanguage.ID) "Contoh: Bibit, Indodax, Bank Jatim" else "e.g. Bibit, Indodax",
+            placeholder = if (language == AppLanguage.ID) "Contoh: Bank Neo, Solana, LinkAja" else "e.g. Bank Neo, Solana",
+          )
+          AccountAutoResearchPreview(
+            query = customChannelInput,
+            modifier = Modifier.padding(top = 2.dp),
           )
         }
 
@@ -200,9 +190,13 @@ fun IncomePage(
           value = note,
           onValueChange = { newNote ->
             note = newNote
-            if (category.isBlank() || categoriesList.any { it.equals(category, ignoreCase = true) }) {
+            if (category.isBlank() || category == otherCategoryLabel) {
               val detected = SmartCategoryHelper.detectCategory(newNote, EntryType.Income)
               if (detected != null) {
+                if (!categoriesList.contains(detected)) {
+                  CategoryManager.addIncomeCategory(context, detected)
+                  categoriesList = CategoryManager.getIncomeCategories(context)
+                }
                 category = detected
               }
             }
@@ -212,57 +206,22 @@ fun IncomePage(
         )
 
         // Lampiran Foto Struk / Bukti Transfer (100% Opsional)
-        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-          Text(text = strings["receipt_attachment_title"].ifBlank { "Lampiran Bukti / Struk (Opsional)" }, fontSize = 12.sp, color = colors.muted, fontWeight = FontWeight.SemiBold)
-          if (receiptUri.isBlank()) {
-            Box(
-              modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(10.dp))
-                .background(colors.bg2)
-                .border(1.dp, colors.cardBorder, RoundedCornerShape(10.dp))
-                .clickable { receiptLauncher.launch("image/*") }
-                .padding(vertical = 12.dp),
-              contentAlignment = Alignment.Center,
-            ) {
-              Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                Text(text = "📷", fontSize = 14.sp)
-                Text(text = strings["receipt_pick_income"].ifBlank { "+ Pilih Foto Bukti Transfer (Opsional)" }, fontSize = 12.sp, color = colors.accent, fontWeight = FontWeight.SemiBold)
-              }
-            }
-          } else {
-            Row(
-              modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(10.dp))
-                .background(colors.accent.copy(alpha = 0.1f))
-                .border(1.dp, colors.accent.copy(alpha = 0.3f), RoundedCornerShape(10.dp))
-                .padding(horizontal = 12.dp, vertical = 10.dp),
-              horizontalArrangement = Arrangement.SpaceBetween,
-              verticalAlignment = Alignment.CenterVertically,
-            ) {
-              Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(text = "📎", fontSize = 14.sp)
-                Text(text = strings["receipt_attached"].ifBlank { "Foto Bukti Terlampir" }, fontSize = 12.sp, color = colors.text, fontWeight = FontWeight.Bold)
-              }
-              Box(
-                modifier = Modifier
-                  .clip(CircleShape)
-                  .background(colors.danger.copy(alpha = 0.15f))
-                  .clickable { receiptUri = "" }
-                  .padding(horizontal = 8.dp, vertical = 4.dp),
-              ) {
-                Text(text = "${strings["delete"]} ✕", fontSize = 11.sp, color = colors.danger, fontWeight = FontWeight.Bold)
-              }
-            }
-          }
-        }
+        ReceiptAttachmentField(
+          receiptUri = receiptUri,
+          onPickReceipt = { receiptLauncher.launch("image/*") },
+          onRemoveReceipt = { receiptUri = "" },
+          pickLabel = strings["receipt_pick_income"].ifBlank { "+ Foto Bukti Transfer (Opsional)" },
+          attachmentTitle = strings["receipt_attachment_title"].ifBlank { "Lampiran Bukti / Struk" },
+          attachedLabel = strings["receipt_attached"].ifBlank { "Foto Bukti Terlampir" },
+          deleteLabel = strings["delete"],
+        )
 
+        val isCategoryValid = category.isNotBlank() && (category != otherCategoryLabel || customCategoryInput.isNotBlank())
         val isSourceValid = source.isNotBlank() && (source != otherLabel || customSourceInput.isNotBlank())
         val isChannelValid = channel.isNotBlank() && (channel != otherLabel || customChannelInput.isNotBlank())
         val isFormValid = parseAmount(amount) > 0 &&
           date.isNotBlank() &&
-          category.isNotBlank() &&
+          isCategoryValid &&
           isSourceValid &&
           isChannelValid
 
@@ -271,6 +230,15 @@ fun IncomePage(
           enabled = isFormValid,
           onClick = {
             if (!isFormValid) return@GradientButton
+            val finalCategory = if (category == otherCategoryLabel && customCategoryInput.isNotBlank()) {
+              val trimmed = customCategoryInput.trim()
+              CategoryManager.addIncomeCategory(context, trimmed)
+              categoriesList = CategoryManager.getIncomeCategories(context)
+              trimmed
+            } else {
+              category
+            }
+
             val finalSource = if (source == otherLabel && customSourceInput.isNotBlank()) {
               val trimmed = customSourceInput.trim()
               CustomAccountManager.addCustomSource(context, trimmed)
@@ -297,7 +265,7 @@ fun IncomePage(
               type = EntryType.Income,
               amount = parseAmount(amount),
               date = normalizedDate,
-              category = category,
+              category = finalCategory,
               note = note,
               sourceOrMethod = finalSource,
               channelOrBank = finalChannel,
@@ -312,6 +280,7 @@ fun IncomePage(
             amount = ""
             date = ""
             category = ""
+            customCategoryInput = ""
             source = ""
             channel = ""
             customSourceInput = ""
@@ -325,19 +294,5 @@ fun IncomePage(
         )
       }
     }
-  }
-
-  if (showAddCategoryDialog) {
-    AddCategoryDialog(
-      onDismiss = { showAddCategoryDialog = false },
-      placeholder = strings["category_placeholder_income"].ifBlank { "Misal: Bonus, Dividen, Freelance" },
-      strings = strings,
-      onConfirm = { newCat ->
-        CategoryManager.addIncomeCategory(context, newCat)
-        categoriesList = CategoryManager.getIncomeCategories(context)
-        category = newCat
-        showAddCategoryDialog = false
-      },
-    )
   }
 }

@@ -1,5 +1,6 @@
 package com.solvix.tabungan
 
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
@@ -42,6 +43,18 @@ class MainActivity : FragmentActivity() {
       TabunganApp()
     }
   }
+
+  override fun onNewIntent(intent: Intent) {
+    super.onNewIntent(intent)
+    setIntent(intent)
+    intent.getStringExtra("target_page")?.let { target ->
+      targetPageCallback?.invoke(target)
+    }
+  }
+
+  companion object {
+    var targetPageCallback: ((String) -> Unit)? = null
+  }
 }
 
 @Composable
@@ -56,6 +69,32 @@ fun TabunganApp() {
     if (!granted) {
       state.alertMessage = "Notification permission is required to show reminders."
       state.showAlert = true
+    }
+  }
+
+  fun navigateToTarget(target: String) {
+    when (target.lowercase()) {
+      "expense" -> state.currentPage = Page.Expense
+      "income" -> state.currentPage = Page.Income
+      "transfer" -> state.currentPage = Page.Transfer
+      "calculator" -> state.currentPage = Page.Calculator
+      else -> Unit
+    }
+  }
+
+  LaunchedEffect(Unit) {
+    val initialTarget = (context as? MainActivity)?.intent?.getStringExtra("target_page")
+    if (!initialTarget.isNullOrBlank()) {
+      navigateToTarget(initialTarget)
+    }
+  }
+
+  DisposableEffect(Unit) {
+    MainActivity.targetPageCallback = { target ->
+      navigateToTarget(target)
+    }
+    onDispose {
+      MainActivity.targetPageCallback = null
     }
   }
 
@@ -100,8 +139,9 @@ fun TabunganApp() {
               else -> -1L
             }
             if (timeoutMs >= 0L && System.currentTimeMillis() - lastBackgroundTimestamp >= timeoutMs) {
+              state.isAppLocked = true
               state.launchFingerprintAuth {
-                // Unlocked successfully via native biometric prompt (no PIN required)
+                state.isAppLocked = false
               }
             }
           }

@@ -133,7 +133,7 @@ fun DashboardTrendLineChart(
               modifier = Modifier
                 .size(8.dp)
                 .clip(CircleShape)
-                .background(colors.accent2),
+                .background(Color(0xFF10B981)),
             )
             Spacer(modifier = Modifier.width(4.dp))
             Text(

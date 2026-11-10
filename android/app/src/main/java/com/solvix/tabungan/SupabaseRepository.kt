@@ -422,4 +422,60 @@ object SupabaseRepository {
         filter { eq("id", userId) }
       }
   }
+
+  suspend fun fetchInitialBalances(userId: String): Map<String, Long> {
+    if (userId.isBlank()) return emptyMap()
+    return try {
+      val list = SupabaseClient.client
+        .from("account_initial_balances")
+        .select { filter { eq("user_id", userId) } }
+        .decodeList<SupabaseInitialBalance>()
+      list.associate { it.accountName to it.balance }
+    } catch (_: Throwable) {
+      emptyMap()
+    }
+  }
+
+  suspend fun upsertInitialBalance(userId: String, accountName: String, balance: Long) {
+    val trimmed = accountName.trim()
+    if (userId.isBlank() || trimmed.isBlank()) return
+    runCatching {
+      SupabaseClient.client
+        .from("account_initial_balances")
+        .upsert(
+          buildJsonObject {
+            put("user_id", userId)
+            put("account_name", trimmed)
+            put("balance", balance)
+            put("updated_at", nowJakartaText())
+          }
+        )
+    }
+  }
+
+  suspend fun deleteInitialBalance(userId: String, accountName: String) {
+    val trimmed = accountName.trim()
+    if (userId.isBlank() || trimmed.isBlank()) return
+    runCatching {
+      SupabaseClient.client
+        .from("account_initial_balances")
+        .delete {
+          filter {
+            eq("user_id", userId)
+            eq("account_name", trimmed)
+          }
+        }
+    }
+  }
+
+  suspend fun deleteAllInitialBalances(userId: String) {
+    if (userId.isBlank()) return
+    runCatching {
+      SupabaseClient.client
+        .from("account_initial_balances")
+        .delete {
+          filter { eq("user_id", userId) }
+        }
+    }
+  }
 }

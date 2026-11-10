@@ -13,6 +13,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.solvix.tabungan.AnimatedAmountText
@@ -44,21 +45,26 @@ fun DashboardAssetRow(
       modifier = Modifier.weight(1f),
     ) {
       AccountBrandLogo(
+        accountName = item.name,
         brand = item.brand,
         size = 36.dp,
       )
 
-      Column {
+      Column(modifier = Modifier.weight(1f, fill = false)) {
         Text(
           text = item.name,
           fontWeight = FontWeight.SemiBold,
           fontSize = 13.sp,
           color = colors.text,
+          maxLines = 1,
+          overflow = TextOverflow.Ellipsis,
         )
         Text(
           text = "$percentInt% $pctTotalText",
           fontSize = 11.sp,
           color = colors.muted,
+          maxLines = 1,
+          overflow = TextOverflow.Ellipsis,
         )
       }
     }

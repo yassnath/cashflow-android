@@ -64,6 +64,7 @@ suspend fun loadUserData(
   }
 
   // 2. Muat dari Supabase secara sinkronisasi latar
+  runCatching { InitialBalanceManager.syncFromCloud(context, userId) }
   val loadedResult = runCatching { fetchUserData(userId, authId) }
   val loaded = loadedResult.getOrNull() ?: return
 

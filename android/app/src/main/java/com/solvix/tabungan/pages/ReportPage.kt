@@ -1,10 +1,6 @@
 package com.solvix.tabungan
 
 import android.content.Context
-import android.content.Intent
-import android.graphics.Paint
-import android.graphics.Typeface
-import android.graphics.pdf.PdfDocument
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -23,9 +19,11 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import com.solvix.tabungan.pages.report.FinancialCalendarView
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -54,7 +52,6 @@ import com.solvix.tabungan.formatRupiah
 import com.solvix.tabungan.isDarkTheme
 import com.solvix.tabungan.themePageIcon
 import com.solvix.tabungan.totalsFromSeries
-import java.io.OutputStreamWriter
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -72,6 +69,7 @@ fun ReportPage(
   val theme = LocalThemeName.current
   val context = LocalContext.current
   var modeIndex by rememberSaveable { mutableIntStateOf(0) }
+  var reportTab by rememberSaveable { mutableStateOf("analytics") }
   val monthly = buildMonthlySeries(income, expense, language)
   val yearly = buildYearlySeries(income, expense, startYear)
   val series = if (modeIndex == 0) monthly else yearly
@@ -110,14 +108,68 @@ fun ReportPage(
 
   Column {
     SectionTitle(icon = themePageVisualIcon(LocalThemeName.current, Page.Report), title = strings["section_report_title"])
-    Box(
+
+    // Segmented Tab Pilihan Tampilan
+    Row(
       modifier = Modifier
         .fillMaxWidth()
-        .shadow(12.dp, RoundedCornerShape(AppDimens.radiusLg))
-        .clip(RoundedCornerShape(AppDimens.radiusLg))
-        .background(chartBackground)
-        .padding(16.dp),
+        .clip(RoundedCornerShape(AppDimens.radiusSm))
+        .background(colors.bg2)
+        .padding(4.dp),
+      horizontalArrangement = Arrangement.spacedBy(6.dp),
     ) {
+      Box(
+        modifier = Modifier
+          .weight(1f)
+          .clip(RoundedCornerShape(AppDimens.radiusSm))
+          .background(if (reportTab == "analytics") colors.accent else Color.Transparent)
+          .clickable { reportTab = "analytics" }
+          .padding(vertical = 8.dp),
+        contentAlignment = Alignment.Center,
+      ) {
+        Text(
+          text = "📊 " + strings["report_tab_analytics"].ifBlank { "Grafik & Tren" },
+          fontWeight = FontWeight.Bold,
+          fontSize = 12.sp,
+          color = if (reportTab == "analytics") Color.White else colors.muted,
+        )
+      }
+
+      Box(
+        modifier = Modifier
+          .weight(1f)
+          .clip(RoundedCornerShape(AppDimens.radiusSm))
+          .background(if (reportTab == "calendar") colors.accent else Color.Transparent)
+          .clickable { reportTab = "calendar" }
+          .padding(vertical = 8.dp),
+        contentAlignment = Alignment.Center,
+      ) {
+        Text(
+          text = "📅 " + strings["report_tab_calendar"].ifBlank { "Kalender Arus Kas" },
+          fontWeight = FontWeight.Bold,
+          fontSize = 12.sp,
+          color = if (reportTab == "calendar") Color.White else colors.muted,
+        )
+      }
+    }
+
+    Spacer(modifier = Modifier.height(12.dp))
+
+    if (reportTab == "calendar") {
+      FinancialCalendarView(
+        income = income,
+        expense = expense,
+        strings = strings,
+      )
+    } else {
+      Box(
+        modifier = Modifier
+          .fillMaxWidth()
+          .shadow(12.dp, RoundedCornerShape(AppDimens.radiusLg))
+          .clip(RoundedCornerShape(AppDimens.radiusLg))
+          .background(chartBackground)
+          .padding(16.dp),
+      ) {
       Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         val inactiveBrush = Brush.linearGradient(listOf(Color.White.copy(alpha = 0.08f), Color.White.copy(alpha = 0.08f)))
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -177,6 +229,7 @@ fun ReportPage(
         onClick = { shareReportText(context, reportTitle, series, totals) },
       )
     }
+    }
   }
 }
 
@@ -196,127 +249,3 @@ private fun ReportLine(label: String, value: String, positive: Boolean) {
   }
 }
 
-fun shareReportText(context: Context, title: String, series: ChartSeries, totals: Pair<Int, Int>) {
-  val content = buildString {
-    appendLine("📊 $title")
-    appendLine("---------------------------")
-    appendLine("⬆️ Total Pemasukkan: ${formatRupiah(totals.first)}")
-    appendLine("⬇️ Total Pengeluaran: ${formatRupiah(totals.second)}")
-    appendLine("✨ Total Saldo: ${formatRupiah(totals.first - totals.second)}")
-    appendLine("---------------------------")
-    appendLine("Rincian Ringkas:")
-    val takeCount = series.labels.size.coerceAtMost(6)
-    val startIndex = (series.labels.size - takeCount).coerceAtLeast(0)
-    for (i in startIndex until series.labels.size) {
-      val label = series.labels.getOrNull(i).orEmpty()
-      val inc = series.income.getOrNull(i) ?: 0
-      val exp = series.expense.getOrNull(i) ?: 0
-      appendLine("• $label: Pemasukkan ${formatRupiah(inc)} | Pengeluaran ${formatRupiah(exp)}")
-    }
-  }
-  val intent = Intent(Intent.ACTION_SEND).apply {
-    type = "text/plain"
-    putExtra(Intent.EXTRA_SUBJECT, title)
-    putExtra(Intent.EXTRA_TEXT, content)
-  }
-  context.startActivity(Intent.createChooser(intent, "Bagikan Laporan Keuangan via"))
-}
-
-fun openExportedFile(context: Context, uri: Uri, mimeType: String) {
-  val intent = Intent(Intent.ACTION_VIEW).apply {
-    setDataAndType(uri, mimeType)
-    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-  }
-  try {
-    context.startActivity(intent)
-  } catch (_: Exception) {
-    // Fallback if viewer is not available
-  }
-}
-
-fun writeReportPdf(
-  context: Context,
-  uri: Uri,
-  title: String,
-  series: ChartSeries,
-  totals: Pair<Int, Int>,
-) {
-  val document = PdfDocument()
-  val pageInfo = PdfDocument.PageInfo.Builder(595, 842, 1).create()
-  val page = document.startPage(pageInfo)
-  val canvas = page.canvas
-  val paint = Paint().apply {
-    color = android.graphics.Color.BLACK
-    textSize = 18f
-    typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
-  }
-  var y = 40f
-  canvas.drawText(title, 40f, y, paint)
-  y += 22f
-  paint.textSize = 11f
-  paint.typeface = Typeface.DEFAULT
-  val generated = SimpleDateFormat("dd-MM-yyyy HH:mm:ss", Locale.US).format(Date())
-  canvas.drawText("Generated: $generated", 40f, y, paint)
-  y += 22f
-
-  paint.typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
-  canvas.drawText("Label", 40f, y, paint)
-  canvas.drawText("Income", 240f, y, paint)
-  canvas.drawText("Expense", 360f, y, paint)
-  canvas.drawText("Balance", 480f, y, paint)
-  y += 16f
-  paint.typeface = Typeface.DEFAULT
-
-  for (i in series.labels.indices) {
-    val label = series.labels[i]
-    val income = series.income.getOrNull(i) ?: 0
-    val expense = series.expense.getOrNull(i) ?: 0
-    val balance = income - expense
-    canvas.drawText(label, 40f, y, paint)
-    canvas.drawText(formatRupiah(income), 240f, y, paint)
-    canvas.drawText(formatRupiah(expense), 360f, y, paint)
-    canvas.drawText(formatRupiah(balance), 480f, y, paint)
-    y += 16f
-  }
-
-  y += 12f
-  paint.typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
-  canvas.drawText("Total Income: ${formatRupiah(totals.first)}", 40f, y, paint)
-  y += 16f
-  canvas.drawText("Total Expense: ${formatRupiah(totals.second)}", 40f, y, paint)
-  y += 16f
-  canvas.drawText("Total Balance: ${formatRupiah(totals.first - totals.second)}", 40f, y, paint)
-
-  document.finishPage(page)
-  context.contentResolver.openOutputStream(uri)?.use { output ->
-    document.writeTo(output)
-  }
-  document.close()
-}
-
-fun writeReportCsv(
-  context: Context,
-  uri: Uri,
-  title: String,
-  series: ChartSeries,
-  totals: Pair<Int, Int>,
-) {
-  context.contentResolver.openOutputStream(uri)?.use { output ->
-    OutputStreamWriter(output).use { writer ->
-      writer.appendLine(title)
-      writer.appendLine("Label,Income,Expense,Balance")
-      for (i in series.labels.indices) {
-        val label = series.labels[i]
-        val income = series.income.getOrNull(i) ?: 0
-        val expense = series.expense.getOrNull(i) ?: 0
-        val balance = income - expense
-        writer.appendLine("$label,${formatRupiah(income)},${formatRupiah(expense)},${formatRupiah(balance)}")
-      }
-      writer.appendLine()
-      writer.appendLine("Total Income,${formatRupiah(totals.first)}")
-      writer.appendLine("Total Expense,${formatRupiah(totals.second)}")
-      writer.appendLine("Total Balance,${formatRupiah(totals.first - totals.second)}")
-      writer.flush()
-    }
-  }
-}

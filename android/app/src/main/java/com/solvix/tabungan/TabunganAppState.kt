@@ -80,6 +80,7 @@ class TabunganAppState(
   var failedSignInAttempts by mutableIntStateOf(prefs.getInt("signin_failed_attempts", 0))
   var signInLockedUntil by mutableLongStateOf(prefs.getLong("signin_locked_until", 0L))
   var biometricPrompted by mutableStateOf(false)
+  var isAppLocked by mutableStateOf(false)
 
   val keyguardManager = context.getSystemService(Context.KEYGUARD_SERVICE) as KeyguardManager
 

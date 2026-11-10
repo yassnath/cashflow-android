@@ -17,4 +17,5 @@ data class FullAppBackup(
   val dreams: List<DreamEntry> = emptyList(),
   val loans: List<LoanEntry> = emptyList(),
   val categoryBudgets: Map<String, Int> = emptyMap(),
+  val initialBalances: Map<String, Long> = emptyMap(),
 )

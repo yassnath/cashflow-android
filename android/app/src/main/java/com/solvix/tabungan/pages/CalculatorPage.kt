@@ -27,23 +27,87 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.solvix.tabungan.AppCard
+import androidx.compose.foundation.layout.Spacer
 import com.solvix.tabungan.AppDimens
 import com.solvix.tabungan.LocalAppColors
 import com.solvix.tabungan.LocalStrings
 import com.solvix.tabungan.LocalThemeName
 import com.solvix.tabungan.Page
 import com.solvix.tabungan.SectionTitle
+import com.solvix.tabungan.pages.calculator.SplitBillSection
 import com.solvix.tabungan.themePageIcon
 
-
 @Composable
-fun CalculatorPage() {
+fun CalculatorPage(
+  onRecordToExpense: (Long) -> Unit = {},
+  onToast: (String) -> Unit = {},
+) {
   var display by rememberSaveable { mutableStateOf("0") }
+  var activeTab by rememberSaveable { mutableStateOf("calculator") }
   val strings = LocalStrings.current
   val colors = LocalAppColors.current
+
   Column {
-    SectionTitle(icon = themePageVisualIcon(LocalThemeName.current, Page.Calculator), title = strings["calculator_title"], subtitle = strings["calculator_subtitle"])
-    AppCard {
+    SectionTitle(
+      icon = themePageVisualIcon(LocalThemeName.current, Page.Calculator),
+      title = strings["calculator_title"],
+      subtitle = strings["calculator_subtitle"],
+    )
+
+    // Segmented Tab Selector
+    Row(
+      modifier = Modifier
+        .fillMaxWidth()
+        .clip(RoundedCornerShape(AppDimens.radiusSm))
+        .background(colors.bg2)
+        .padding(4.dp),
+      horizontalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+      Box(
+        modifier = Modifier
+          .weight(1f)
+          .clip(RoundedCornerShape(AppDimens.radiusSm))
+          .background(if (activeTab == "calculator") colors.accent else Color.Transparent)
+          .clickable { activeTab = "calculator" }
+          .padding(vertical = 8.dp),
+        contentAlignment = Alignment.Center,
+      ) {
+        Text(
+          text = "🧮 " + strings["tab_standard_calc"].ifBlank { "Kalkulator" },
+          fontWeight = FontWeight.Bold,
+          fontSize = 12.sp,
+          color = if (activeTab == "calculator") Color.White else colors.muted,
+        )
+      }
+
+      Box(
+        modifier = Modifier
+          .weight(1f)
+          .clip(RoundedCornerShape(AppDimens.radiusSm))
+          .background(if (activeTab == "split_bill") colors.accent else Color.Transparent)
+          .clickable { activeTab = "split_bill" }
+          .padding(vertical = 8.dp),
+        contentAlignment = Alignment.Center,
+      ) {
+        Text(
+          text = "👥 " + strings["tab_split_bill"].ifBlank { "Bagi Tagihan" },
+          fontWeight = FontWeight.Bold,
+          fontSize = 12.sp,
+          color = if (activeTab == "split_bill") Color.White else colors.muted,
+        )
+      }
+    }
+
+    Spacer(modifier = Modifier.height(12.dp))
+
+    if (activeTab == "split_bill") {
+      SplitBillSection(
+        onRecordToExpense = onRecordToExpense,
+        onToast = onToast,
+        strings = strings,
+      )
+    } else {
+      AppCard {
       Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Box(
           modifier = Modifier
@@ -79,6 +143,7 @@ fun CalculatorPage() {
       }
     }
   }
+}
 }
 
 @Composable

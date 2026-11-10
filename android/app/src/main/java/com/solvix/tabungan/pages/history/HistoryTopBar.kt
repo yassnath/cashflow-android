@@ -17,6 +17,9 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Checklist
+import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.FileDownload
 import androidx.compose.material.icons.rounded.FilterList
 import androidx.compose.material3.DropdownMenu
@@ -58,124 +61,237 @@ fun HistoryTopBar(
   onClearMaxAmount: () -> Unit,
   onClearDateRange: () -> Unit,
   onImportCsv: () -> Unit = {},
+  isSelectionMode: Boolean = false,
+  selectedCount: Int = 0,
+  onToggleSelectionMode: () -> Unit = {},
+  onSelectAll: () -> Unit = {},
+  onDeleteSelected: () -> Unit = {},
   strings: AppStrings = LocalStrings.current,
 ) {
   val colors = LocalAppColors.current
   var showExportMenu by remember { mutableStateOf(false) }
 
   Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-    // Header Bar: Title di Kiri, Tombol Aksi (Filter & Ekspor) di Kanan
-    Row(
-      modifier = Modifier.fillMaxWidth(),
-      horizontalArrangement = Arrangement.SpaceBetween,
-      verticalAlignment = Alignment.CenterVertically,
-    ) {
-      SectionTitle(
-        icon = themePageVisualIcon(LocalThemeName.current, Page.History),
-        title = "Riwayat Transaksi",
-        subtitle = "Lacak seluruh arus keuangan Anda",
-      )
-
+    if (isSelectionMode) {
       Row(
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = Modifier
+          .fillMaxWidth()
+          .clip(RoundedCornerShape(12.dp))
+          .background(colors.accent.copy(alpha = 0.12f))
+          .border(1.dp, colors.accent.copy(alpha = 0.35f), RoundedCornerShape(12.dp))
+          .padding(horizontal = 12.dp, vertical = 8.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
       ) {
-        // Tombol Icon Filter Pop-up (hanya icon, dengan badge jika ada filter aktif)
-        Box(
-          modifier = Modifier
-            .size(42.dp)
-            .clip(RoundedCornerShape(12.dp))
-            .background(if (activeFilterCount > 0) colors.accent.copy(alpha = 0.15f) else colors.bg2)
-            .border(
-              width = 1.dp,
-              color = if (activeFilterCount > 0) colors.accent else colors.cardBorder,
-              shape = RoundedCornerShape(12.dp),
-            )
-            .clickable { onOpenFilter() },
-          contentAlignment = Alignment.Center,
+        Row(
+          horizontalArrangement = Arrangement.spacedBy(8.dp),
+          verticalAlignment = Alignment.CenterVertically,
         ) {
-          Icon(
-            imageVector = Icons.Rounded.FilterList,
-            contentDescription = "Filter",
-            tint = if (activeFilterCount > 0) colors.accent else colors.text,
-            modifier = Modifier.size(20.dp),
+          Box(
+            modifier = Modifier
+              .size(32.dp)
+              .clip(CircleShape)
+              .background(colors.bg2)
+              .clickable { onToggleSelectionMode() },
+            contentAlignment = Alignment.Center,
+          ) {
+            Icon(
+              imageVector = Icons.Rounded.Close,
+              contentDescription = "Batal",
+              tint = colors.text,
+              modifier = Modifier.size(18.dp),
+            )
+          }
+          Text(
+            text = "$selectedCount dipilih",
+            fontWeight = FontWeight.Bold,
+            fontSize = 14.sp,
+            color = colors.text,
           )
-          if (activeFilterCount > 0) {
-            Box(
-              modifier = Modifier
-                .align(Alignment.TopEnd)
-                .padding(top = 4.dp, end = 4.dp)
-                .size(16.dp)
-                .clip(CircleShape)
-                .background(colors.accent),
-              contentAlignment = Alignment.Center,
+        }
+
+        Row(
+          horizontalArrangement = Arrangement.spacedBy(8.dp),
+          verticalAlignment = Alignment.CenterVertically,
+        ) {
+          Box(
+            modifier = Modifier
+              .clip(RoundedCornerShape(8.dp))
+              .background(colors.bg2)
+              .clickable { onSelectAll() }
+              .padding(horizontal = 10.dp, vertical = 6.dp),
+            contentAlignment = Alignment.Center,
+          ) {
+            Text(
+              text = "Pilih Semua",
+              fontSize = 12.sp,
+              fontWeight = FontWeight.Bold,
+              color = colors.accent,
+            )
+          }
+
+          Box(
+            modifier = Modifier
+              .clip(RoundedCornerShape(8.dp))
+              .background(if (selectedCount > 0) colors.danger else colors.danger.copy(alpha = 0.3f))
+              .clickable(enabled = selectedCount > 0) { onDeleteSelected() }
+              .padding(horizontal = 12.dp, vertical = 6.dp),
+            contentAlignment = Alignment.Center,
+          ) {
+            Row(
+              horizontalArrangement = Arrangement.spacedBy(4.dp),
+              verticalAlignment = Alignment.CenterVertically,
             ) {
+              Icon(
+                imageVector = Icons.Rounded.Delete,
+                contentDescription = null,
+                tint = Color.White,
+                modifier = Modifier.size(16.dp),
+              )
               Text(
-                text = activeFilterCount.toString(),
-                color = Color.White,
-                fontSize = 9.sp,
+                text = "Hapus",
+                fontSize = 12.sp,
                 fontWeight = FontWeight.Bold,
+                color = Color.White,
               )
             }
           }
         }
+      }
+    } else {
+      // Header Bar: Title di Kiri, Tombol Aksi (Filter, Ekspor, Checklist) di Kanan
+      Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+      ) {
+        SectionTitle(
+          icon = themePageVisualIcon(LocalThemeName.current, Page.History),
+          title = strings["page_history"].ifBlank { "Riwayat" },
+          subtitle = strings["section_history_subtitle"].ifBlank { "Lacak seluruh arus transaksi" },
+          modifier = Modifier.weight(1f, fill = false),
+          compact = true,
+        )
 
-        // Tombol Ekspor Dropdown
-        Box {
+        Row(
+          horizontalArrangement = Arrangement.spacedBy(6.dp),
+          verticalAlignment = Alignment.CenterVertically,
+        ) {
+          // Tombol Checklist Mode Seleksi
           Box(
             modifier = Modifier
-              .height(42.dp)
+              .size(42.dp)
               .clip(RoundedCornerShape(12.dp))
               .background(colors.bg2)
               .border(1.dp, colors.cardBorder, RoundedCornerShape(12.dp))
-              .clickable { showExportMenu = true }
-              .padding(horizontal = 10.dp),
+              .clickable { onToggleSelectionMode() },
             contentAlignment = Alignment.Center,
           ) {
             Icon(
-              imageVector = Icons.Rounded.FileDownload,
-              contentDescription = "Ekspor",
+              imageVector = Icons.Rounded.Checklist,
+              contentDescription = "Pilih Banyak",
               tint = colors.accent,
               modifier = Modifier.size(20.dp),
             )
           }
 
-          DropdownMenu(
-            expanded = showExportMenu,
-            onDismissRequest = { showExportMenu = false },
-            modifier = Modifier.background(colors.card),
+          // Tombol Icon Filter Pop-up (hanya icon, dengan badge jika ada filter aktif)
+          Box(
+            modifier = Modifier
+              .size(42.dp)
+              .clip(RoundedCornerShape(12.dp))
+              .background(if (activeFilterCount > 0) colors.accent.copy(alpha = 0.15f) else colors.bg2)
+              .border(
+                width = 1.dp,
+                color = if (activeFilterCount > 0) colors.accent else colors.cardBorder,
+                shape = RoundedCornerShape(12.dp),
+              )
+              .clickable { onOpenFilter() },
+            contentAlignment = Alignment.Center,
           ) {
-            DropdownMenuItem(
-              text = { Text("📄 Ekspor Dokumen PDF", fontSize = 13.sp, color = colors.text) },
-              onClick = {
-                showExportMenu = false
-                val uri = HistoryExportHelper.exportToPdf(
-                  context = context,
-                  entries = sortedEntries,
-                  periodText = "$fromDate s/d $toDate",
+            Icon(
+              imageVector = Icons.Rounded.FilterList,
+              contentDescription = "Filter",
+              tint = if (activeFilterCount > 0) colors.accent else colors.text,
+              modifier = Modifier.size(20.dp),
+            )
+            if (activeFilterCount > 0) {
+              Box(
+                modifier = Modifier
+                  .align(Alignment.TopEnd)
+                  .padding(top = 4.dp, end = 4.dp)
+                  .size(16.dp)
+                  .clip(CircleShape)
+                  .background(colors.accent),
+                contentAlignment = Alignment.Center,
+              ) {
+                Text(
+                  text = activeFilterCount.toString(),
+                  color = Color.White,
+                  fontSize = 9.sp,
+                  fontWeight = FontWeight.Bold,
                 )
-                HistoryExportHelper.shareExportedFile(context, uri, "application/pdf", "CashFlow Laporan PDF")
-              },
-            )
-            DropdownMenuItem(
-              text = { Text("📊 Ekspor Excel / CSV", fontSize = 13.sp, color = colors.text) },
-              onClick = {
-                showExportMenu = false
-                val uri = HistoryExportHelper.exportToCsv(
-                  context = context,
-                  entries = sortedEntries,
-                  filterTitle = "Riwayat_${fromDate}_${toDate}",
-                )
-                HistoryExportHelper.shareExportedFile(context, uri, "text/csv", "CashFlow Laporan CSV")
-              },
-            )
-            DropdownMenuItem(
-              text = { Text("📥 Impor dari File CSV", fontSize = 13.sp, color = colors.text) },
-              onClick = {
-                showExportMenu = false
-                onImportCsv()
-              },
-            )
+              }
+            }
+          }
+
+          // Tombol Ekspor Dropdown
+          Box {
+            Box(
+              modifier = Modifier
+                .height(42.dp)
+                .clip(RoundedCornerShape(12.dp))
+                .background(colors.bg2)
+                .border(1.dp, colors.cardBorder, RoundedCornerShape(12.dp))
+                .clickable { showExportMenu = true }
+                .padding(horizontal = 10.dp),
+              contentAlignment = Alignment.Center,
+            ) {
+              Icon(
+                imageVector = Icons.Rounded.FileDownload,
+                contentDescription = "Ekspor",
+                tint = colors.accent,
+                modifier = Modifier.size(20.dp),
+              )
+            }
+
+            DropdownMenu(
+              expanded = showExportMenu,
+              onDismissRequest = { showExportMenu = false },
+              modifier = Modifier.background(colors.card),
+            ) {
+              DropdownMenuItem(
+                text = { Text("📄 Ekspor Dokumen PDF", fontSize = 13.sp, color = colors.text) },
+                onClick = {
+                  showExportMenu = false
+                  val uri = HistoryExportHelper.exportToPdf(
+                    context = context,
+                    entries = sortedEntries,
+                    periodText = "$fromDate s/d $toDate",
+                  )
+                  HistoryExportHelper.shareExportedFile(context, uri, "application/pdf", "CashFlow Laporan PDF")
+                },
+              )
+              DropdownMenuItem(
+                text = { Text("📊 Ekspor Excel / CSV", fontSize = 13.sp, color = colors.text) },
+                onClick = {
+                  showExportMenu = false
+                  val uri = HistoryExportHelper.exportToCsv(
+                    context = context,
+                    entries = sortedEntries,
+                    filterTitle = "Riwayat_${fromDate}_${toDate}",
+                  )
+                  HistoryExportHelper.shareExportedFile(context, uri, "text/csv", "CashFlow Laporan CSV")
+                },
+              )
+              DropdownMenuItem(
+                text = { Text("📥 Impor dari File CSV", fontSize = 13.sp, color = colors.text) },
+                onClick = {
+                  showExportMenu = false
+                  onImportCsv()
+                },
+              )
+            }
           }
         }
       }

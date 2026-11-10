@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -36,12 +37,16 @@ fun HistoryPage(
   onEdit: (MoneyEntry) -> Unit,
   onDelete: (MoneyEntry) -> Unit,
   onImportEntries: (List<MoneyEntry>) -> Unit = {},
+  onDeleteBatch: (List<MoneyEntry>) -> Unit = { list -> list.forEach(onDelete) },
 ) {
   val context = LocalContext.current
   val colors = LocalAppColors.current
   val isDark = isDarkTheme(LocalThemeName.current)
   val incomeColor = if (isDark) Color(0xFF7BE27A) else Color(0xFF2E7D32)
   val expenseColor = if (isDark) Color(0xFFFF8A80) else Color(0xFFC62828)
+
+  var isSelectionMode by rememberSaveable { mutableStateOf(false) }
+  val selectedIds = remember { mutableStateListOf<String>() }
 
   val defaultRange = remember {
     val now = Calendar.getInstance()
@@ -186,6 +191,26 @@ fun HistoryPage(
         toDate = defaultRange.second
       },
       onImportCsv = { csvPickerLauncher.launch("text/*") },
+      isSelectionMode = isSelectionMode,
+      selectedCount = selectedIds.size,
+      onToggleSelectionMode = {
+        isSelectionMode = !isSelectionMode
+        if (!isSelectionMode) selectedIds.clear()
+      },
+      onSelectAll = {
+        if (selectedIds.size == sorted.size) {
+          selectedIds.clear()
+        } else {
+          selectedIds.clear()
+          selectedIds.addAll(sorted.map { it.id })
+        }
+      },
+      onDeleteSelected = {
+        val toDelete = sorted.filter { selectedIds.contains(it.id) }
+        onDeleteBatch(toDelete)
+        selectedIds.clear()
+        isSelectionMode = false
+      },
     )
 
     // Ringkasan Periode Hasil Filter (Ergonomis, Bersih & Ringkas)
@@ -246,12 +271,22 @@ fun HistoryPage(
 
             // Kartu Transaksi di hari tersebut
             dayEntries.forEach { entry ->
+              val isSelected = selectedIds.contains(entry.id)
               EntryCard(
                 entry = entry,
                 strings = strings,
                 onEdit = onEdit,
                 onDelete = onDelete,
                 onPreviewReceipt = { previewReceiptUri = it },
+                isSelectionMode = isSelectionMode,
+                isSelected = isSelected,
+                onToggleSelect = {
+                  if (isSelected) {
+                    selectedIds.remove(entry.id)
+                  } else {
+                    selectedIds.add(entry.id)
+                  }
+                },
               )
             }
           }

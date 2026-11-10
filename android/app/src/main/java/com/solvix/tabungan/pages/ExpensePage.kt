@@ -37,8 +37,13 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
-import com.solvix.tabungan.components.AddCategoryDialog
+import com.solvix.tabungan.components.AccountAutoResearchPreview
+import com.solvix.tabungan.components.ReceiptAttachmentField
 import com.solvix.tabungan.components.RecurringSubscriptionsModal
+import com.solvix.tabungan.pages.expense.ExpenseOcrBanner
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 @Composable
 fun ExpensePage(
@@ -67,16 +72,41 @@ fun ExpensePage(
 
   var showRecurringModal by remember { mutableStateOf(false) }
   var categoriesList by remember { mutableStateOf(CategoryManager.getExpenseCategories(context)) }
-  var showAddCategoryDialog by remember { mutableStateOf(false) }
+  var customCategoryInput by rememberSaveable { mutableStateOf("") }
 
   var customBankInput by rememberSaveable { mutableStateOf("") }
   var customAccountsList by remember { mutableStateOf(CustomAccountManager.getCustomAccounts(context)) }
+
+  var isScanningOcr by remember { mutableStateOf(false) }
 
   val receiptLauncher = rememberLauncherForActivityResult(
     contract = ActivityResultContracts.GetContent(),
   ) { uri ->
     if (uri != null) {
       receiptUri = ReceiptStorageHelper.saveReceiptToInternalStorage(context, uri)
+    }
+  }
+
+  val ocrLauncher = rememberLauncherForActivityResult(
+    contract = ActivityResultContracts.GetContent(),
+  ) { uri ->
+    if (uri != null) {
+      isScanningOcr = true
+      val saved = ReceiptStorageHelper.saveReceiptToInternalStorage(context, uri)
+      receiptUri = saved
+      ReceiptOcrHelper.processReceiptImage(context, uri) { result ->
+        isScanningOcr = false
+        if (result.amount != null) {
+          amount = result.amount.toString()
+        }
+        if (!result.date.isNullOrBlank()) {
+          val currentTime = SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(Date())
+          date = "${result.date} $currentTime"
+        }
+        if (!result.merchant.isNullOrBlank() && note.isBlank()) {
+          note = result.merchant
+        }
+      }
     }
   }
 
@@ -87,6 +117,10 @@ fun ExpensePage(
       amount = entry.amount.toString()
       date = entry.date
       category = entry.category
+      if (entry.category.isNotBlank() && !categoriesList.contains(entry.category)) {
+        CategoryManager.addExpenseCategory(context, entry.category)
+        categoriesList = CategoryManager.getExpenseCategories(context)
+      }
       method = entry.sourceOrMethod
       bank = entry.channelOrBank
       note = entry.note
@@ -103,6 +137,16 @@ fun ExpensePage(
       title = strings["section_expense_title"],
       subtitle = strings["section_expense_subtitle"],
     )
+
+    // Tombol Scan Struk Otomatis (OCR)
+    ExpenseOcrBanner(
+      isScanning = isScanningOcr,
+      title = strings["ocr_scan_title"].ifBlank { "Scan Struk (OCR)" },
+      onClick = { ocrLauncher.launch("image/*") },
+    )
+
+    Spacer(modifier = Modifier.height(10.dp))
+
     AppCard {
       Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         AppTextField(
@@ -112,48 +156,29 @@ fun ExpensePage(
           keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
         )
         DateField(strings["label_date"], value = date, onValueChange = { date = it }, placeholder = strings["placeholder_date"])
-        AppTextField(strings["label_category"], value = category, onValueChange = { category = it }, placeholder = strings["placeholder_category_expense"])
 
-        // Quick Category Chips & "+ Kategori Baru"
-        Row(
-          modifier = Modifier
-            .fillMaxWidth()
-            .horizontalScroll(rememberScrollState()),
-          horizontalArrangement = Arrangement.spacedBy(6.dp),
-          verticalAlignment = Alignment.CenterVertically,
-        ) {
-          // Tombol Tambah Kategori Kustom
-          Box(
-            modifier = Modifier
-              .clip(RoundedCornerShape(999.dp))
-              .background(colors.accent.copy(alpha = 0.12f))
-              .border(1.dp, colors.accent.copy(alpha = 0.4f), RoundedCornerShape(999.dp))
-              .clickable { showAddCategoryDialog = true }
-              .padding(horizontal = 10.dp, vertical = 5.dp),
-            contentAlignment = Alignment.Center,
-          ) {
-            Text(text = strings["category_add_button"].ifBlank { "+ Kategori" }, fontSize = 11.sp, fontWeight = FontWeight.Bold, color = colors.accent)
-          }
-
-          categoriesList.forEach { cat ->
-            val isSelected = cat.equals(category, ignoreCase = true)
-            Box(
-              modifier = Modifier
-                .clip(RoundedCornerShape(999.dp))
-                .background(if (isSelected) colors.accent else colors.bg2)
-                .clickable { category = cat }
-                .padding(horizontal = 10.dp, vertical = 5.dp),
-              contentAlignment = Alignment.Center,
-            ) {
-              Text(
-                text = cat,
-                fontSize = 11.sp,
-                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                color = if (isSelected) Color.White else colors.text,
-              )
-            }
-          }
+        val otherCategoryLabel = if (language == AppLanguage.ID) "Lainnya" else "Other"
+        val categoryOptions = remember(categoriesList, otherCategoryLabel) {
+          (categoriesList.filter { it != otherCategoryLabel } + listOf(otherCategoryLabel)).distinct()
         }
+
+        AppDropdown(
+          label = strings["label_category"].ifBlank { if (language == AppLanguage.ID) "Kategori Pengeluaran" else "Expense Category" },
+          placeholder = strings["placeholder_category_expense"].ifBlank { if (language == AppLanguage.ID) "Pilih Kategori" else "Select Category" },
+          options = categoryOptions,
+          selected = category,
+          onSelected = { sel -> category = sel },
+        )
+
+        if (category == otherCategoryLabel) {
+          AppTextField(
+            label = if (language == AppLanguage.ID) "Nama Kategori Baru" else "New Category Name",
+            value = customCategoryInput,
+            onValueChange = { customCategoryInput = it },
+            placeholder = if (language == AppLanguage.ID) "Contoh: Makanan, Belanja, Tagihan" else "e.g. Food, Shopping, Bills",
+          )
+        }
+
         AppDropdown(
           label = strings["label_method"],
           placeholder = strings["placeholder_method"],
@@ -176,10 +201,14 @@ fun ExpensePage(
         )
         if (bank == otherLabel) {
           AppTextField(
-            label = if (language == AppLanguage.ID) "Nama Bank / Dompet Baru (Manual)" else "New Bank / Wallet Name (Manual)",
+            label = if (language == AppLanguage.ID) "Nama Akun / Bank Baru" else "New Account / Bank Name",
             value = customBankInput,
             onValueChange = { customBankInput = it },
-            placeholder = if (language == AppLanguage.ID) "Contoh: Bibit, Indodax, Bank Jatim" else "e.g. Bibit, Indodax",
+            placeholder = if (language == AppLanguage.ID) "Contoh: Bank Neo, Solana, LinkAja" else "e.g. Bank Neo, Solana",
+          )
+          AccountAutoResearchPreview(
+            query = customBankInput,
+            modifier = Modifier.padding(top = 2.dp),
           )
         }
 
@@ -189,9 +218,13 @@ fun ExpensePage(
           value = note,
           onValueChange = { newNote ->
             note = newNote
-            if (category.isBlank() || categoriesList.any { it.equals(category, ignoreCase = true) }) {
+            if (category.isBlank() || category == otherCategoryLabel) {
               val detected = SmartCategoryHelper.detectCategory(newNote, EntryType.Expense)
               if (detected != null) {
+                if (!categoriesList.contains(detected)) {
+                  CategoryManager.addExpenseCategory(context, detected)
+                  categoriesList = CategoryManager.getExpenseCategories(context)
+                }
                 category = detected
               }
             }
@@ -201,56 +234,21 @@ fun ExpensePage(
         )
 
         // Lampiran Foto Struk / Bukti Transfer (100% Opsional)
-        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-          Text(text = strings["receipt_attachment_title"].ifBlank { "Lampiran Bukti / Struk (Opsional)" }, fontSize = 12.sp, color = colors.muted, fontWeight = FontWeight.SemiBold)
-          if (receiptUri.isBlank()) {
-            Box(
-              modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(10.dp))
-                .background(colors.bg2)
-                .border(1.dp, colors.cardBorder, RoundedCornerShape(10.dp))
-                .clickable { receiptLauncher.launch("image/*") }
-                .padding(vertical = 12.dp),
-              contentAlignment = Alignment.Center,
-            ) {
-              Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                Text(text = "📷", fontSize = 14.sp)
-                Text(text = strings["receipt_pick_expense"].ifBlank { "+ Pilih Foto Struk / Bukti Belanja (Opsional)" }, fontSize = 12.sp, color = colors.accent, fontWeight = FontWeight.SemiBold)
-              }
-            }
-          } else {
-            Row(
-              modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(10.dp))
-                .background(colors.accent.copy(alpha = 0.1f))
-                .border(1.dp, colors.accent.copy(alpha = 0.3f), RoundedCornerShape(10.dp))
-                .padding(horizontal = 12.dp, vertical = 10.dp),
-              horizontalArrangement = Arrangement.SpaceBetween,
-              verticalAlignment = Alignment.CenterVertically,
-            ) {
-              Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(text = "📎", fontSize = 14.sp)
-                Text(text = strings["receipt_attached"].ifBlank { "Foto Bukti Terlampir" }, fontSize = 12.sp, color = colors.text, fontWeight = FontWeight.Bold)
-              }
-              Box(
-                modifier = Modifier
-                  .clip(CircleShape)
-                  .background(colors.danger.copy(alpha = 0.15f))
-                  .clickable { receiptUri = "" }
-                  .padding(horizontal = 8.dp, vertical = 4.dp),
-              ) {
-                Text(text = "${strings["delete"]} ✕", fontSize = 11.sp, color = colors.danger, fontWeight = FontWeight.Bold)
-              }
-            }
-          }
-        }
+        ReceiptAttachmentField(
+          receiptUri = receiptUri,
+          onPickReceipt = { receiptLauncher.launch("image/*") },
+          onRemoveReceipt = { receiptUri = "" },
+          pickLabel = strings["receipt_pick_expense"].ifBlank { "+ Foto Struk / Bukti (Opsional)" },
+          attachmentTitle = strings["receipt_attachment_title"].ifBlank { "Lampiran Bukti / Struk" },
+          attachedLabel = strings["receipt_attached"].ifBlank { "Foto Bukti Terlampir" },
+          deleteLabel = strings["delete"],
+        )
 
+        val isCategoryValid = category.isNotBlank() && (category != otherCategoryLabel || customCategoryInput.isNotBlank())
         val isBankValid = bank.isNotBlank() && (bank != otherLabel || customBankInput.isNotBlank())
         val isFormValid = parseAmount(amount) > 0 &&
           date.isNotBlank() &&
-          category.isNotBlank() &&
+          isCategoryValid &&
           method.isNotBlank() &&
           isBankValid
 
@@ -259,6 +257,15 @@ fun ExpensePage(
           enabled = isFormValid,
           onClick = {
             if (!isFormValid) return@GradientButton
+            val finalCategory = if (category == otherCategoryLabel && customCategoryInput.isNotBlank()) {
+              val trimmed = customCategoryInput.trim()
+              CategoryManager.addExpenseCategory(context, trimmed)
+              categoriesList = CategoryManager.getExpenseCategories(context)
+              trimmed
+            } else {
+              category
+            }
+
             val finalBank = if (bank == otherLabel && customBankInput.isNotBlank()) {
               val trimmed = customBankInput.trim()
               CustomAccountManager.addCustomAccount(context, trimmed)
@@ -276,7 +283,7 @@ fun ExpensePage(
               type = EntryType.Expense,
               amount = parseAmount(amount),
               date = normalizedDate,
-              category = category,
+              category = finalCategory,
               note = note,
               sourceOrMethod = method,
               channelOrBank = finalBank,
@@ -289,11 +296,12 @@ fun ExpensePage(
               onUpdate(entry)
             }
             customBankInput = ""
+            customCategoryInput = ""
 
             // Peringatan Batas Anggaran Kategori
             val budgetCheck = BudgetAlertHelper.checkBudgetStatus(
               context = context,
-              category = category,
+              category = finalCategory,
               newAmount = entry.amount,
               existingExpenses = existingExpenses,
               editingEntryId = editingId,
@@ -352,19 +360,6 @@ fun ExpensePage(
     }
   }
 
-  if (showAddCategoryDialog) {
-    AddCategoryDialog(
-      onDismiss = { showAddCategoryDialog = false },
-      placeholder = strings["category_placeholder_expense"].ifBlank { "Misal: Hobi, Kucing, Donasi" },
-      strings = strings,
-      onConfirm = { newCat ->
-        CategoryManager.addExpenseCategory(context, newCat)
-        categoriesList = CategoryManager.getExpenseCategories(context)
-        category = newCat
-        showAddCategoryDialog = false
-      },
-    )
-  }
 
   if (showRecurringModal) {
     RecurringSubscriptionsModal(
