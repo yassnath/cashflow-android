@@ -13,6 +13,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Paid
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -42,21 +45,44 @@ fun CurrencySettingsCard(
   val options = currencyList.map { it.label }
 
   AppCard {
-    Text(
-      text = strings["currency_settings_title"].ifBlank { "Format Mata Uang & Konversi" },
-      fontWeight = FontWeight.Bold,
-      fontSize = 16.sp,
-      color = colors.text,
-    )
-    Spacer(modifier = Modifier.height(4.dp))
-    Text(
-      text = strings["currency_settings_subtitle"].ifBlank {
-        "Pilih mata uang yang diinginkan. Seluruh nominal transaksi di aplikasi akan langsung dikonversi otomatis sesuai kurs acuan terkini."
-      },
-      color = colors.muted,
-      fontSize = 12.sp,
-    )
-    Spacer(modifier = Modifier.height(12.dp))
+    Row(
+      modifier = Modifier.fillMaxWidth(),
+      verticalAlignment = Alignment.CenterVertically,
+      horizontalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+      Box(
+        modifier = Modifier
+          .size(36.dp)
+          .clip(CircleShape)
+          .background(colors.accent.copy(alpha = 0.15f)),
+        contentAlignment = Alignment.Center,
+      ) {
+        Icon(
+          imageVector = Icons.Rounded.Paid,
+          contentDescription = null,
+          tint = colors.accent,
+          modifier = Modifier.size(20.dp),
+        )
+      }
+
+      Column(modifier = Modifier.weight(1f)) {
+        Text(
+          text = strings["currency_settings_title"].ifBlank { "Format Mata Uang & Konversi" },
+          fontWeight = FontWeight.Bold,
+          fontSize = 15.sp,
+          color = colors.text,
+        )
+        Text(
+          text = strings["currency_settings_subtitle"].ifBlank {
+            "Pilih mata uang acuan untuk seluruh nominal transaksi di aplikasi."
+          },
+          color = colors.muted,
+          fontSize = 11.sp,
+          lineHeight = 15.sp,
+        )
+      }
+    }
+    Spacer(modifier = Modifier.height(14.dp))
 
     AppDropdown(
       label = strings["currency_active_label"].ifBlank { "Mata Uang Aktif" },

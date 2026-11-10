@@ -11,6 +11,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Calculate
+import androidx.compose.material.icons.rounded.Groups
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -72,12 +77,23 @@ fun CalculatorPage(
           .padding(vertical = 8.dp),
         contentAlignment = Alignment.Center,
       ) {
-        Text(
-          text = "🧮 " + strings["tab_standard_calc"].ifBlank { "Kalkulator" },
-          fontWeight = FontWeight.Bold,
-          fontSize = 12.sp,
-          color = if (activeTab == "calculator") Color.White else colors.muted,
-        )
+        Row(
+          verticalAlignment = Alignment.CenterVertically,
+          horizontalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+          Icon(
+            imageVector = Icons.Rounded.Calculate,
+            contentDescription = null,
+            tint = if (activeTab == "calculator") Color.White else colors.muted,
+            modifier = Modifier.size(16.dp),
+          )
+          Text(
+            text = strings["tab_standard_calc"].ifBlank { "Kalkulator" },
+            fontWeight = FontWeight.Bold,
+            fontSize = 12.sp,
+            color = if (activeTab == "calculator") Color.White else colors.muted,
+          )
+        }
       }
 
       Box(
@@ -89,12 +105,23 @@ fun CalculatorPage(
           .padding(vertical = 8.dp),
         contentAlignment = Alignment.Center,
       ) {
-        Text(
-          text = "👥 " + strings["tab_split_bill"].ifBlank { "Bagi Tagihan" },
-          fontWeight = FontWeight.Bold,
-          fontSize = 12.sp,
-          color = if (activeTab == "split_bill") Color.White else colors.muted,
-        )
+        Row(
+          verticalAlignment = Alignment.CenterVertically,
+          horizontalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+          Icon(
+            imageVector = Icons.Rounded.Groups,
+            contentDescription = null,
+            tint = if (activeTab == "split_bill") Color.White else colors.muted,
+            modifier = Modifier.size(16.dp),
+          )
+          Text(
+            text = strings["tab_split_bill"].ifBlank { "Bagi Tagihan" },
+            fontWeight = FontWeight.Bold,
+            fontSize = 12.sp,
+            color = if (activeTab == "split_bill") Color.White else colors.muted,
+          )
+        }
       }
     }
 
@@ -164,8 +191,8 @@ private fun RowScope.CalculatorKey(label: String, onPress: () -> Unit, isPrimary
   }
   val textColor = when {
     isPrimary -> Color.White
-    label == "C" || label == "⌫" -> Color(0xFFB92643)
-    isOperator -> Color(0xFFA55B00)
+    label == "C" || label == "⌫" -> colors.danger
+    isOperator -> colors.accent
     isFunction -> colors.accent2
     else -> colors.text
   }

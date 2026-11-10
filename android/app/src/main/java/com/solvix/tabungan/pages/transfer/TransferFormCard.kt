@@ -8,6 +8,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.ArrowForward
+import androidx.compose.material.icons.rounded.SwapHoriz
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -64,12 +69,23 @@ fun TransferFormCard(
 
   AppCard {
     Column(verticalArrangement = Arrangement.spacedBy(if (isSmallScreen) 10.dp else 12.dp)) {
-      Text(
-        text = "🔁 " + strings["transfer_card_title"].ifBlank { "Transfer Antar Rekening" },
-        fontSize = if (isSmallScreen) 13.sp else 14.sp,
-        fontWeight = FontWeight.Bold,
-        color = colors.text,
-      )
+      Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+      ) {
+        Icon(
+          imageVector = Icons.Rounded.SwapHoriz,
+          contentDescription = null,
+          tint = colors.accent,
+          modifier = Modifier.size(if (isSmallScreen) 16.dp else 18.dp),
+        )
+        Text(
+          text = strings["transfer_card_title"].ifBlank { "Transfer Antar Rekening" },
+          fontSize = if (isSmallScreen) 13.sp else 14.sp,
+          fontWeight = FontWeight.Bold,
+          color = colors.text,
+        )
+      }
 
       Row(
         modifier = Modifier.fillMaxWidth(),
@@ -85,11 +101,13 @@ fun TransferFormCard(
             onSelected = onFromAccountChange,
           )
         }
-        Text(
-          text = "➔",
-          fontSize = if (isSmallScreen) 13.sp else 16.sp,
-          color = colors.accent,
-          modifier = Modifier.padding(top = if (isSmallScreen) 16.dp else 18.dp),
+        Icon(
+          imageVector = Icons.AutoMirrored.Rounded.ArrowForward,
+          contentDescription = null,
+          tint = colors.accent,
+          modifier = Modifier
+            .padding(top = if (isSmallScreen) 16.dp else 18.dp)
+            .size(if (isSmallScreen) 16.dp else 18.dp),
         )
         Column(modifier = Modifier.weight(1f)) {
           AppDropdown(

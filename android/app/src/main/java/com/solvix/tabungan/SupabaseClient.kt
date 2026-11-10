@@ -57,6 +57,8 @@ data class SupabaseMoneyEntry(
   val sourceOrMethod: String = "",
   @SerialName("channel_bank")
   val channelOrBank: String = "",
+  @SerialName("receipt_url")
+  val receiptUrl: String = "",
 ) {
   val amountInt: Int get() = amount.toInt()
 }
@@ -103,3 +105,54 @@ data class SupabaseInitialBalance(
   @SerialName("updated_at")
   val updatedAt: String = "",
 )
+
+@Serializable
+data class SupabaseSecurityPin(
+  val id: String = "",
+  @SerialName("user_id")
+  val userId: String = "",
+  @SerialName("pin_hash")
+  val pinHash: String = "",
+  @SerialName("pin_salt")
+  val pinSalt: String = "",
+  @SerialName("pin_enabled")
+  val pinEnabled: Boolean = true,
+  @SerialName("updated_at")
+  val updatedAt: String = "",
+)
+
+@Serializable
+data class SupabaseLoanEntry(
+  val id: String = "",
+  @SerialName("user_id")
+  val userId: String = "",
+  val type: String = "",
+  val title: String = "",
+  val principal: Long = 0L,
+  val paid: Long = 0L,
+  @SerialName("annual_interest_rate")
+  val annualInterestRate: Double = 0.0,
+  @SerialName("monthly_payment")
+  val monthlyPayment: Long = 0L,
+  @SerialName("due_date")
+  val dueDate: String = "",
+  val note: String = "",
+  @SerialName("linked_expense_id")
+  val linkedExpenseId: String? = null,
+  @SerialName("is_receivable")
+  val isReceivable: Boolean = false,
+) {
+  fun toLoanEntry(): LoanEntry = LoanEntry(
+    id = id,
+    type = type,
+    title = title,
+    principal = principal.coerceIn(0L, Int.MAX_VALUE.toLong()).toInt(),
+    paid = paid.coerceIn(0L, Int.MAX_VALUE.toLong()).toInt(),
+    annualInterestRate = annualInterestRate,
+    monthlyPayment = monthlyPayment.coerceIn(0L, Int.MAX_VALUE.toLong()).toInt(),
+    dueDate = dueDate,
+    note = note,
+    linkedExpenseId = linkedExpenseId,
+    isReceivable = isReceivable,
+  )
+}

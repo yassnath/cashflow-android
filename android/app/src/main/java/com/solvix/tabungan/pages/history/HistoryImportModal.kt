@@ -12,6 +12,12 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.FileDownload
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -19,10 +25,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 
 @Composable
 fun HistoryImportModal(
@@ -38,33 +46,61 @@ fun HistoryImportModal(
   val totalIncome = parsedEntries.filter { it.type == EntryType.Income }.sumOf { it.amount }
   val totalExpense = parsedEntries.filter { it.type == EntryType.Expense }.sumOf { it.amount }
 
-  Dialog(onDismissRequest = onDismiss) {
+  val configuration = LocalConfiguration.current
+  val isSmallScreen = configuration.screenWidthDp < 360
+
+  Dialog(
+    onDismissRequest = onDismiss,
+    properties = DialogProperties(usePlatformDefaultWidth = false),
+  ) {
     Box(
       modifier = Modifier
-        .fillMaxWidth(0.92f)
+        .fillMaxWidth(if (isSmallScreen) 0.98f else 0.92f)
+        .widthIn(max = 480.dp)
         .clip(RoundedCornerShape(20.dp))
         .background(colors.card)
         .border(1.dp, colors.cardBorder, RoundedCornerShape(20.dp))
-        .padding(18.dp),
+        .padding(if (isSmallScreen) 14.dp else 18.dp),
     ) {
       Column(
         verticalArrangement = Arrangement.spacedBy(12.dp),
       ) {
-        Text(
-          text = strings["history_import_title"].ifBlank { "📥 Konfirmasi Impor Riwayat" },
-          fontSize = 16.sp,
-          fontWeight = FontWeight.Bold,
-          color = colors.text,
-        )
-        Text(
-          text = try {
-            String.format(strings["history_import_subtitle"].ifBlank { "Ditemukan %d transaksi yang siap ditambahkan ke riwayat Anda." }, parsedEntries.size)
-          } catch (_: Exception) {
-            "Ditemukan ${parsedEntries.size} transaksi yang siap ditambahkan ke riwayat Anda."
-          },
-          fontSize = 12.sp,
-          color = colors.muted,
-        )
+        Row(
+          verticalAlignment = Alignment.CenterVertically,
+          horizontalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+          Box(
+            modifier = Modifier
+              .size(36.dp)
+              .clip(CircleShape)
+              .background(colors.accent.copy(alpha = 0.15f)),
+            contentAlignment = Alignment.Center,
+          ) {
+            Icon(
+              imageVector = Icons.Rounded.FileDownload,
+              contentDescription = null,
+              tint = colors.accent,
+              modifier = Modifier.size(20.dp),
+            )
+          }
+          Column(modifier = Modifier.weight(1f)) {
+            Text(
+              text = strings["history_import_title"].ifBlank { "Konfirmasi Impor Riwayat" }.replace("📥 ", ""),
+              fontSize = if (isSmallScreen) 14.sp else 16.sp,
+              fontWeight = FontWeight.Bold,
+              color = colors.text,
+            )
+            Text(
+              text = try {
+                String.format(strings["history_import_subtitle"].ifBlank { "Ditemukan %d transaksi yang siap ditambahkan." }, parsedEntries.size)
+              } catch (_: Exception) {
+                "Ditemukan ${parsedEntries.size} transaksi yang siap ditambahkan."
+              },
+              fontSize = 11.sp,
+              color = colors.muted,
+            )
+          }
+        }
 
         Box(
           modifier = Modifier

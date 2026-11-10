@@ -13,6 +13,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Payments
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -36,7 +38,7 @@ fun FilterTypeAmountSection(
 ) {
   val colors = LocalAppColors.current
 
-  FilterSection(title = strings["filter_type_amount"].ifBlank { "Tipe & Rentang Nominal" }, icon = "💰") {
+  FilterSection(title = strings["filter_type_amount"].ifBlank { "Tipe & Rentang Nominal" }, icon = Icons.Rounded.Payments) {
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
       // Tipe Segmented Control
       Row(

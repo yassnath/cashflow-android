@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -32,10 +33,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 
 @Composable
 fun HistoryFilterModal(
@@ -74,12 +77,20 @@ fun HistoryFilterModal(
   var tempMinAmount by remember { mutableStateOf(initialMinAmount) }
   var tempMaxAmount by remember { mutableStateOf(initialMaxAmount) }
 
-  Dialog(onDismissRequest = onDismiss) {
+  val configuration = LocalConfiguration.current
+  val maxModalHeight = (configuration.screenHeightDp * 0.88f).dp
+  val isSmallScreen = configuration.screenWidthDp < 360
+
+  Dialog(
+    onDismissRequest = onDismiss,
+    properties = DialogProperties(usePlatformDefaultWidth = false),
+  ) {
     Box(
       modifier = Modifier
-        .fillMaxWidth(0.95f)
+        .fillMaxWidth(if (isSmallScreen) 0.96f else 0.92f)
+        .widthIn(max = 520.dp)
         .imePadding()
-        .heightIn(max = 640.dp)
+        .heightIn(max = maxModalHeight)
         .clip(RoundedCornerShape(20.dp))
         .background(colors.card)
         .border(1.dp, colors.cardBorder, RoundedCornerShape(20.dp))
@@ -129,7 +140,7 @@ fun HistoryFilterModal(
           verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
           // Seksi 1: Kata Kunci Pencarian
-          FilterSection(title = strings["history_filter_text_search"].ifBlank { "Pencarian Teks" }, icon = "🔍") {
+          FilterSection(title = strings["history_filter_text_search"].ifBlank { "Pencarian Teks" }, icon = Icons.Rounded.Search) {
             AppTextField(
               label = "",
               value = tempSearchQuery,

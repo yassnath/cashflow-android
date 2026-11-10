@@ -20,6 +20,7 @@ import com.solvix.tabungan.EntryType
 import com.solvix.tabungan.HapticHelper
 import com.solvix.tabungan.LocalThemeName
 import com.solvix.tabungan.MoneyEntry
+import com.solvix.tabungan.Page
 import com.solvix.tabungan.SectionTitle
 import com.solvix.tabungan.UUIDString
 import com.solvix.tabungan.ensureDateHasTime
@@ -27,7 +28,7 @@ import com.solvix.tabungan.formatRupiah
 import com.solvix.tabungan.nowJakartaText
 import com.solvix.tabungan.nowJakartaTime
 import com.solvix.tabungan.parseAmount
-import com.solvix.tabungan.themeSectionVisualIcon
+import com.solvix.tabungan.themePageVisualIcon
 
 @Composable
 fun TransferPage(
@@ -76,7 +77,7 @@ fun TransferPage(
 
   Column(modifier = Modifier.imePadding()) {
     SectionTitle(
-      icon = themeSectionVisualIcon(LocalThemeName.current, "wallet", "🔁"),
+      icon = themePageVisualIcon(LocalThemeName.current, Page.Transfer),
       title = strings["transfer_header_title"].ifBlank { "Transfer Antar Akun" },
       subtitle = strings["transfer_header_subtitle"].ifBlank { "Pindah dana antar rekening dan e-wallet tanpa mengubah total kekayaan" },
     )

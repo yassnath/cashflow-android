@@ -13,6 +13,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.CalendarToday
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -70,12 +72,12 @@ fun FilterDateSection(
 
   val presets = listOf(
     "today" to (strings["filter_preset_today"].ifBlank { "Hari Ini" }),
-    "week" to (strings["filter_preset_week"].ifBlank { "Minggu Ini" }),
+    "week" to (strings["filter_preset_week"].ifBlank { "7 Hari Terakhir" }),
     "month" to (strings["filter_preset_month"].ifBlank { "Bulan Ini" }),
     "all" to (strings["filter_preset_all"].ifBlank { "Semua" }),
   )
 
-  FilterSection(title = strings["filter_date_range"].ifBlank { "Rentang Tanggal" }, icon = "📅") {
+  FilterSection(title = strings["filter_date_range"].ifBlank { "Rentang Tanggal" }, icon = Icons.Rounded.CalendarToday) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
       // Shortcut Pills
       Row(

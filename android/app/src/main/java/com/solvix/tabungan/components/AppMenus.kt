@@ -37,6 +37,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupPositionProvider
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.PopupProperties
 
 @Composable
@@ -52,6 +59,58 @@ fun ToastMessage(text: String, visible: Boolean, modifier: Modifier = Modifier) 
       contentAlignment = Alignment.Center,
     ) {
       Text(text = text, fontWeight = FontWeight.Bold, color = colors.text)
+    }
+  }
+}
+
+@Composable
+fun ActionSnackbar(
+  text: String,
+  actionLabel: String,
+  visible: Boolean,
+  onActionClick: () -> Unit,
+  modifier: Modifier = Modifier,
+) {
+  val colors = LocalAppColors.current
+  AnimatedVisibility(
+    visible = visible,
+    enter = fadeIn() + slideInVertically { it / 2 },
+    exit = fadeOut() + slideOutVertically { it / 2 },
+  ) {
+    Box(
+      modifier = modifier
+        .fillMaxWidth(0.92f)
+        .clip(RoundedCornerShape(14.dp))
+        .background(colors.card)
+        .border(1.dp, colors.accent.copy(alpha = 0.35f), RoundedCornerShape(14.dp))
+        .padding(horizontal = 16.dp, vertical = 12.dp),
+    ) {
+      Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+      ) {
+        Text(
+          text = text,
+          fontWeight = FontWeight.Medium,
+          fontSize = 13.sp,
+          color = colors.text,
+          modifier = Modifier.weight(1f, fill = false),
+          maxLines = 1,
+          overflow = TextOverflow.Ellipsis,
+        )
+        Spacer(modifier = Modifier.width(12.dp))
+        Text(
+          text = actionLabel,
+          fontWeight = FontWeight.ExtraBold,
+          fontSize = 13.sp,
+          color = colors.accent,
+          modifier = Modifier
+            .clip(RoundedCornerShape(6.dp))
+            .clickable(onClick = onActionClick)
+            .padding(horizontal = 8.dp, vertical = 4.dp),
+        )
+      }
     }
   }
 }

@@ -99,6 +99,7 @@ fun TabunganApp() {
   }
 
   LaunchedEffect(Unit) {
+    AppPinSecurityManager.init(context)
     state.prefs.edit {
       remove("face_unlock_enabled")
       remove("saved_username")
@@ -130,7 +131,9 @@ fun TabunganApp() {
         Lifecycle.Event.ON_START -> {
           state.fadeSeed += 1
           CurrencyHelper.checkAndAutoRefresh(context)
-          if (lastBackgroundTimestamp > 0L && state.isLoggedIn && state.fingerprintEnabled && state.canUseFingerprint()) {
+          val hasPin = AppPinSecurityManager.isPinSet(context)
+          val hasFingerprint = state.fingerprintEnabled && state.canUseFingerprint()
+          if (lastBackgroundTimestamp > 0L && state.isLoggedIn && (hasFingerprint || hasPin)) {
             val timeoutSetting = state.prefs.getString("auto_lock_timeout", "off") ?: "off"
             val timeoutMs = when (timeoutSetting) {
               "instant", "Segera" -> 0L
@@ -140,8 +143,10 @@ fun TabunganApp() {
             }
             if (timeoutMs >= 0L && System.currentTimeMillis() - lastBackgroundTimestamp >= timeoutMs) {
               state.isAppLocked = true
-              state.launchFingerprintAuth {
-                state.isAppLocked = false
+              if (hasFingerprint) {
+                state.launchFingerprintAuth {
+                  state.isAppLocked = false
+                }
               }
             }
           }

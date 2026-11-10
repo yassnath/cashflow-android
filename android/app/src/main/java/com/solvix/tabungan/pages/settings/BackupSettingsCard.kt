@@ -14,7 +14,12 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.CloudSync
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -60,20 +65,43 @@ fun BackupSettingsCard(
   }
 
   AppCard {
-    Text(
-      text = strings["backup_settings_title"].ifBlank { "Cadangkan & Pulihkan Data" },
-      fontWeight = FontWeight.Bold,
-      fontSize = 16.sp,
-      color = colors.text,
-    )
-    Spacer(modifier = Modifier.height(6.dp))
-    Text(
-      text = strings["backup_settings_subtitle"].ifBlank {
-        "Simpan seluruh data keuangan (transaksi, transfer, impian, hutang, dan anggaran) ke satu file .json utuh untuk diamankan atau dipindahkan ke perangkat lain."
-      },
-      color = colors.muted,
-      fontSize = 12.sp,
-    )
+    Row(
+      modifier = Modifier.fillMaxWidth(),
+      verticalAlignment = Alignment.CenterVertically,
+      horizontalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+      Box(
+        modifier = Modifier
+          .size(36.dp)
+          .clip(CircleShape)
+          .background(colors.accent.copy(alpha = 0.15f)),
+        contentAlignment = Alignment.Center,
+      ) {
+        Icon(
+          imageVector = Icons.Rounded.CloudSync,
+          contentDescription = null,
+          tint = colors.accent,
+          modifier = Modifier.size(20.dp),
+        )
+      }
+
+      Column(modifier = Modifier.weight(1f)) {
+        Text(
+          text = strings["backup_settings_title"].ifBlank { "Cadangkan & Pulihkan Data" },
+          fontWeight = FontWeight.Bold,
+          fontSize = 15.sp,
+          color = colors.text,
+        )
+        Text(
+          text = strings["backup_settings_subtitle"].ifBlank {
+            "Simpan data transaksi, target, dan saldo awal ke file JSON atau pulihkan kembali."
+          },
+          color = colors.muted,
+          fontSize = 11.sp,
+          lineHeight = 15.sp,
+        )
+      }
+    }
     Spacer(modifier = Modifier.height(14.dp))
 
     Row(

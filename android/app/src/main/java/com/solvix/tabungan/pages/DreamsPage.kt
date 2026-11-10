@@ -1,16 +1,30 @@
 package com.solvix.tabungan
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.EmojiEvents
+import androidx.compose.material.icons.rounded.NotificationsActive
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -285,31 +299,72 @@ fun GoalReachedPopup(
   val colors = LocalAppColors.current
   val isExpenseSource = sourceType == "expense"
   val message = if (isExpenseSource) {
-    strings["goal_reached_popup_expense"]
+    strings["goal_reached_popup_expense"].ifBlank { "Batas pengeluaran target telah tercapai." }
   } else {
-    strings["goal_reached_popup_income_balance"]
+    strings["goal_reached_popup_income_balance"].ifBlank { "Target tabungan impian Anda telah berhasil tercapai!" }
   }
-  val messageColor = if (isExpenseSource) colors.danger else Color(0xFF16A34A)
 
-  AppCard {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-      Row(
+  Dialog(
+    onDismissRequest = onDismiss,
+    properties = DialogProperties(usePlatformDefaultWidth = false),
+  ) {
+    Box(
+      modifier = Modifier
+        .fillMaxWidth(0.90f)
+        .widthIn(max = 420.dp)
+        .padding(16.dp),
+      contentAlignment = Alignment.Center,
+    ) {
+      AppCard(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.End,
+        shape = RoundedCornerShape(22.dp),
       ) {
-        Text(
-          text = "x",
-          color = colors.muted,
-          fontWeight = FontWeight.Bold,
-          modifier = Modifier.clickable { onDismiss() },
-        )
+        Column(
+          modifier = Modifier.fillMaxWidth(),
+          horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+          Box(
+            modifier = Modifier
+              .size(56.dp)
+              .clip(CircleShape)
+              .background(if (isExpenseSource) colors.danger.copy(alpha = 0.15f) else Color(0xFF10B981).copy(alpha = 0.15f)),
+            contentAlignment = Alignment.Center,
+          ) {
+            Icon(
+              imageVector = if (isExpenseSource) Icons.Rounded.NotificationsActive else Icons.Rounded.EmojiEvents,
+              contentDescription = null,
+              tint = if (isExpenseSource) colors.danger else Color(0xFF10B981),
+              modifier = Modifier.size(30.dp),
+            )
+          }
+
+          Spacer(modifier = Modifier.height(14.dp))
+
+          Text(
+            text = if (isExpenseSource) "Target Batas Tercapai" else "Target Tercapai!",
+            fontWeight = FontWeight.Bold,
+            fontSize = 17.sp,
+            color = colors.text,
+          )
+
+          Spacer(modifier = Modifier.height(8.dp))
+
+          Text(
+            text = message,
+            fontSize = 13.sp,
+            color = colors.muted,
+            textAlign = TextAlign.Center,
+            lineHeight = 18.sp,
+          )
+
+          Spacer(modifier = Modifier.height(18.dp))
+
+          GradientButton(
+            text = "Hebat, Lanjutkan!",
+            onClick = onDismiss,
+          )
+        }
       }
-      Text(
-        text = message,
-        color = messageColor,
-        fontWeight = FontWeight.SemiBold,
-        fontSize = 13.sp,
-      )
     }
   }
 }

@@ -13,6 +13,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Lightbulb
+import androidx.compose.material.icons.rounded.SwapHoriz
+import androidx.compose.material.icons.rounded.Tune
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -56,6 +61,7 @@ fun DashboardAssetsCard(
 
   var expanded by remember { mutableStateOf(false) }
   var showInitialBalanceModal by remember { mutableStateOf(false) }
+  var selectedLedgerAccount by remember { mutableStateOf<AccountAssetItem?>(null) }
   val initialVersion by InitialBalanceManager.versionState
 
   val initialBalances = remember(initialVersion) {
@@ -152,7 +158,12 @@ fun DashboardAssetsCard(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(6.dp),
           ) {
-            Text(text = "⚙️", fontSize = 12.sp)
+            Icon(
+              imageVector = Icons.Rounded.Tune,
+              contentDescription = null,
+              tint = colors.text,
+              modifier = Modifier.size(14.dp),
+            )
             Text(
               text = initialBalanceBtnLabel,
               fontSize = 12.sp,
@@ -188,7 +199,12 @@ fun DashboardAssetsCard(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(6.dp),
           ) {
-            Text(text = "🔁", fontSize = 12.sp)
+            Icon(
+              imageVector = Icons.Rounded.SwapHoriz,
+              contentDescription = null,
+              tint = colors.accent,
+              modifier = Modifier.size(16.dp),
+            )
             Text(
               text = transferLabel,
               fontSize = 12.sp,
@@ -216,7 +232,12 @@ fun DashboardAssetsCard(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp),
           ) {
-            Text(text = "💡", fontSize = 13.sp)
+            Icon(
+              imageVector = Icons.Rounded.Lightbulb,
+              contentDescription = null,
+              tint = colors.accent,
+              modifier = Modifier.size(16.dp),
+            )
             Text(
               text = "Atur saldo awal rekening & dompetmu agar aset riil sesuai.",
               fontSize = 11.sp,
@@ -268,6 +289,7 @@ fun DashboardAssetsCard(
               item = item,
               netBalance = netBalance,
               pctTotalText = pctText,
+              onClick = { selectedLedgerAccount = item },
             )
           }
         }
@@ -300,6 +322,19 @@ fun DashboardAssetsCard(
       },
       strings = strings,
       userId = userId,
+    )
+  }
+
+  selectedLedgerAccount?.let { acc ->
+    AccountLedgerModal(
+      account = acc,
+      incomeEntries = incomeEntries,
+      expenseEntries = expenseEntries,
+      transferEntries = transferEntries,
+      onDismiss = { selectedLedgerAccount = null },
+      onOpenTransferFromThisAccount = {
+        onTransferClick()
+      },
     )
   }
 }

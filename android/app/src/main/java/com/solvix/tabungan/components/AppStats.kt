@@ -5,12 +5,15 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -81,19 +84,52 @@ fun ThemeCard(
   val colors = LocalAppColors.current
   val shadowColor = Color.Black.copy(alpha = 0.18f)
   val borderColor = if (active) colors.accent else colors.cardBorder
-  val elevation by animateFloatAsState(if (active) 12f else 6f, label = "theme-elevation")
+  val elevation by animateFloatAsState(if (active) 8f else 2f, label = "theme-elevation")
   Row(
     modifier = modifier
       .fillMaxWidth()
-      .shadow(elevation.dp, RoundedCornerShape(14.dp), ambientColor = shadowColor, spotColor = shadowColor)
-      .border(1.dp, borderColor, RoundedCornerShape(14.dp))
-      .background(background, RoundedCornerShape(14.dp))
+      .shadow(elevation.dp, RoundedCornerShape(16.dp), ambientColor = shadowColor, spotColor = shadowColor)
+      .border(if (active) 2.dp else 1.dp, borderColor, RoundedCornerShape(16.dp))
+      .background(background, RoundedCornerShape(16.dp))
       .clickable(onClick = onClick)
-      .padding(horizontal = 12.dp, vertical = 10.dp),
+      .padding(horizontal = 16.dp, vertical = 14.dp),
     verticalAlignment = Alignment.CenterVertically,
+    horizontalArrangement = Arrangement.SpaceBetween,
   ) {
-    Text(text = emoji, fontSize = 16.sp)
-    Spacer(modifier = Modifier.width(12.dp))
-    Text(text = label, fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
+    Row(verticalAlignment = Alignment.CenterVertically) {
+      Box(
+        modifier = Modifier
+          .size(36.dp)
+          .clip(CircleShape)
+          .background(Color.White.copy(alpha = 0.7f)),
+        contentAlignment = Alignment.Center,
+      ) {
+        Text(text = emoji, fontSize = 20.sp)
+      }
+      Spacer(modifier = Modifier.width(12.dp))
+      Text(
+        text = label,
+        fontWeight = FontWeight.Bold,
+        fontSize = 14.sp,
+        color = Color(0xFF1E2434), // Selalu kontras tinggi terhadap latar pastel kartu tema
+      )
+    }
+
+    if (active) {
+      Box(
+        modifier = Modifier
+          .clip(RoundedCornerShape(8.dp))
+          .background(colors.accent)
+          .padding(horizontal = 10.dp, vertical = 4.dp),
+        contentAlignment = Alignment.Center,
+      ) {
+        Text(
+          text = "✓ Aktif",
+          color = Color.White,
+          fontSize = 11.sp,
+          fontWeight = FontWeight.Bold,
+        )
+      }
+    }
   }
 }

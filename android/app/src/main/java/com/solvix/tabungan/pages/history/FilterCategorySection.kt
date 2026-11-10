@@ -11,6 +11,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Category
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -29,7 +31,7 @@ fun FilterCategorySection(
 ) {
   val colors = LocalAppColors.current
 
-  FilterSection(title = strings["filter_category_section"].ifBlank { "Kategori Transaksi" }, icon = "🏷️") {
+  FilterSection(title = strings["filter_category_section"].ifBlank { "Kategori Transaksi" }, icon = Icons.Rounded.Category) {
     Row(
       modifier = Modifier
         .fillMaxWidth()

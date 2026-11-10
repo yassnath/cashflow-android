@@ -10,6 +10,10 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.window.DialogProperties
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
@@ -56,14 +60,23 @@ fun RecurringSubscriptionsModal(
   var showAddForm by remember { mutableStateOf(false) }
   var toastMessage by remember { mutableStateOf<String?>(null) }
 
-  Dialog(onDismissRequest = onDismiss) {
+  val configuration = LocalConfiguration.current
+  val isSmallScreen = configuration.screenWidthDp < 360
+  val maxModalHeight = (configuration.screenHeightDp * 0.90f).dp
+
+  Dialog(
+    onDismissRequest = onDismiss,
+    properties = DialogProperties(usePlatformDefaultWidth = false),
+  ) {
     Box(
       modifier = Modifier
-        .fillMaxWidth(0.96f)
+        .fillMaxWidth(if (isSmallScreen) 0.98f else 0.94f)
+        .widthIn(max = 520.dp)
+        .heightIn(max = maxModalHeight)
         .clip(RoundedCornerShape(20.dp))
         .background(colors.card)
         .border(1.dp, colors.cardBorder, RoundedCornerShape(20.dp))
-        .padding(18.dp),
+        .padding(if (isSmallScreen) 12.dp else 18.dp),
     ) {
       Column(
         modifier = Modifier.verticalScroll(rememberScrollState()),

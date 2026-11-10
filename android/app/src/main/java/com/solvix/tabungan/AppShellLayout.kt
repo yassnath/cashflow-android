@@ -81,7 +81,13 @@ fun AppShellLayout(
   pageFadeSeed: Int,
   scope: kotlinx.coroutines.CoroutineScope,
   isAppLocked: Boolean = false,
+  canUseBiometrics: Boolean = true,
   onUnlockRequest: () -> Unit = {},
+  onUnlockSuccess: () -> Unit = {},
+  undoMessage: String = "",
+  undoVisible: Boolean = false,
+  onUndoClick: () -> Unit = {},
+  onShowUndo: (String, () -> Unit) -> Unit = { _, _ -> },
   onNavigateTo: (Page) -> Unit,
   onShowProfileMenuChange: (Boolean) -> Unit,
   onLogoutClick: () -> Unit,
@@ -266,6 +272,7 @@ fun AppShellLayout(
                   onInsightFeedback = onInsightFeedback,
                   onRequestAiReply = onRequestAiReply,
                   resolveStartYear = resolveStartYear,
+                  onShowUndo = onShowUndo,
                 )
               }
             }
@@ -336,11 +343,17 @@ fun AppShellLayout(
       showAlert = showAlert,
       alertMessage = alertMessage,
       onAlertDismiss = onAlertDismiss,
+      undoMessage = undoMessage,
+      undoVisible = undoVisible,
+      onUndoClick = onUndoClick,
     )
 
     com.solvix.tabungan.components.AppLockScreen(
       isLocked = isAppLocked,
+      canUseBiometrics = canUseBiometrics,
       onUnlockRequest = onUnlockRequest,
+      onUnlockSuccess = onUnlockSuccess,
+      onLogoutRequest = onLogoutClick,
     )
   }
 }

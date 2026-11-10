@@ -8,6 +8,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.solvix.tabungan.ActionSnackbar
 import com.solvix.tabungan.AppLanguage
 import com.solvix.tabungan.AppStrings
 import com.solvix.tabungan.AuthTab
@@ -66,15 +67,25 @@ fun BoxScope.AppShellModals(
   showAlert: Boolean,
   alertMessage: String,
   onAlertDismiss: () -> Unit,
+  // Undo Action Snackbar
+  undoMessage: String = "",
+  undoVisible: Boolean = false,
+  onUndoClick: () -> Unit = {},
 ) {
   Box(
     modifier = Modifier
       .fillMaxWidth()
-      .padding(bottom = 72.dp)
+      .padding(bottom = 76.dp)
       .align(Alignment.BottomCenter),
     contentAlignment = Alignment.Center,
   ) {
-    ToastMessage(text = toastMessage, visible = toastVisible)
+    ToastMessage(text = toastMessage, visible = toastVisible && !undoVisible)
+    ActionSnackbar(
+      text = undoMessage,
+      actionLabel = "URUNGKAN",
+      visible = undoVisible,
+      onActionClick = onUndoClick,
+    )
   }
 
   if (showSplash) {

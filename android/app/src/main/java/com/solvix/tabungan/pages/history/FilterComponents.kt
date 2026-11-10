@@ -9,12 +9,16 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -40,24 +44,42 @@ fun FilterTag(label: String, onRemove: () -> Unit) {
 @Composable
 fun FilterSection(
   title: String,
-  icon: String,
+  icon: ImageVector? = null,
+  emoji: String? = null,
   content: @Composable () -> Unit,
 ) {
   val colors = LocalAppColors.current
   Column(
     modifier = Modifier
       .fillMaxWidth()
-      .clip(RoundedCornerShape(12.dp))
-      .background(colors.bg2.copy(alpha = 0.4f))
-      .border(1.dp, colors.cardBorder, RoundedCornerShape(12.dp))
+      .clip(RoundedCornerShape(14.dp))
+      .background(colors.bg2.copy(alpha = 0.45f))
+      .border(1.dp, colors.cardBorder, RoundedCornerShape(14.dp))
       .padding(12.dp),
     verticalArrangement = Arrangement.spacedBy(8.dp),
   ) {
     Row(
       verticalAlignment = Alignment.CenterVertically,
-      horizontalArrangement = Arrangement.spacedBy(6.dp),
+      horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-      Text(text = icon, fontSize = 13.sp)
+      if (icon != null) {
+        Box(
+          modifier = Modifier
+            .size(24.dp)
+            .clip(CircleShape)
+            .background(colors.accent.copy(alpha = 0.15f)),
+          contentAlignment = Alignment.Center,
+        ) {
+          Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = colors.accent,
+            modifier = Modifier.size(13.dp),
+          )
+        }
+      } else if (!emoji.isNullOrBlank()) {
+        Text(text = emoji, fontSize = 13.sp)
+      }
       Text(
         text = title,
         fontSize = 12.sp,

@@ -38,6 +38,7 @@ data class LoadedUserData(
   val transfer: List<MoneyEntry> = emptyList(),
   val dreams: List<DreamEntry>,
   val pendingDateUpdates: List<Pair<String, String>>,
+  val loans: List<LoanEntry> = emptyList(),
 )
 
 suspend fun fetchUserData(userId: String, authId: String): LoadedUserData {
@@ -137,6 +138,7 @@ suspend fun fetchUserData(userId: String, authId: String): LoadedUserData {
       id = row.id, type = EntryType.Expense, amount = row.amountInt, date = normalizedDate,
       category = row.category, note = row.note, sourceOrMethod = row.sourceOrMethod,
       channelOrBank = row.channelOrBank, createdAt = row.createdAt,
+      receiptUri = row.receiptUrl,
     )
   }
 
@@ -158,5 +160,23 @@ suspend fun fetchUserData(userId: String, authId: String): LoadedUserData {
     )
   }
 
-  return LoadedUserData(income, expense, transfer, dreams, pendingDateUpdates)
+  val loanRows = mutableListOf<SupabaseLoanEntry>()
+  runCatching {
+    val byUserId = SupabaseClient.client
+      .from("loan_entries")
+      .select { filter { eq("user_id", userId) } }
+      .decodeList<SupabaseLoanEntry>()
+    loanRows.addAll(byUserId)
+
+    if (authId.isNotBlank() && authId != userId) {
+      val byAuthId = SupabaseClient.client
+        .from("loan_entries")
+        .select { filter { eq("user_id", authId) } }
+        .decodeList<SupabaseLoanEntry>()
+      loanRows.addAll(byAuthId)
+    }
+  }
+  val loans = loanRows.distinctBy { it.id }.map { it.toLoanEntry() }
+
+  return LoadedUserData(income, expense, transfer, dreams, pendingDateUpdates, loans)
 }

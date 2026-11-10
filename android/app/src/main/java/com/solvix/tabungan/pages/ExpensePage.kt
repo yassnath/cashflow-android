@@ -19,6 +19,10 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Tune
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -354,7 +358,23 @@ fun ExpensePage(
             .padding(horizontal = 12.dp, vertical = 8.dp),
           contentAlignment = Alignment.Center,
         ) {
-          Text(text = strings["recurring_card_action"].ifBlank { "⚙️ Kelola" }, color = colors.accent, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+          Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+          ) {
+            Icon(
+              imageVector = Icons.Rounded.Tune,
+              contentDescription = null,
+              tint = colors.accent,
+              modifier = Modifier.size(14.dp),
+            )
+            Text(
+              text = strings["recurring_card_action"].ifBlank { "Kelola" },
+              color = colors.accent,
+              fontWeight = FontWeight.Bold,
+              fontSize = 13.sp,
+            )
+          }
         }
       }
     }

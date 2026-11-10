@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -134,6 +135,7 @@ fun InitialBalanceModal(
     Box(
       modifier = Modifier
         .fillMaxWidth(if (isSmallScreen) 0.98f else 0.94f)
+        .widthIn(max = 520.dp)
         .imePadding()
         .padding(vertical = if (isSmallScreen) 8.dp else 16.dp),
       contentAlignment = Alignment.Center,

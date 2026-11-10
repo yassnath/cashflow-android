@@ -55,7 +55,6 @@ fun DashboardBanner(
   val colors = LocalAppColors.current
   val theme = LocalThemeName.current
   val isDark = isDarkTheme(theme)
-  val isStandardTheme = theme == ThemeName.StandardLight || theme == ThemeName.StandardDark
 
   val prefs = remember { context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE) }
   var isMasked by remember { mutableStateOf(prefs.getBoolean("privacy_eye_masked", false)) }
@@ -135,14 +134,12 @@ fun DashboardBanner(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(6.dp),
           ) {
-            if (isStandardTheme) {
-              Icon(
-                imageVector = Icons.Rounded.AccountBalance,
-                contentDescription = null,
-                tint = colors.muted,
-                modifier = Modifier.size(14.dp),
-              )
-            }
+            Icon(
+              imageVector = Icons.Rounded.AccountBalance,
+              contentDescription = null,
+              tint = colors.muted,
+              modifier = Modifier.size(14.dp),
+            )
             Text(
               text = strings["dashboard_balance"].uppercase(locale),
               fontSize = 11.sp,
@@ -178,19 +175,12 @@ fun DashboardBanner(
                 .padding(6.dp),
               contentAlignment = Alignment.Center,
             ) {
-              if (isStandardTheme) {
-                Icon(
-                  imageVector = if (isMasked) Icons.Rounded.VisibilityOff else Icons.Rounded.Visibility,
-                  contentDescription = "Toggle Privacy",
-                  tint = colors.muted,
-                  modifier = Modifier.size(18.dp),
-                )
-              } else {
-                Text(
-                  text = if (isMasked) "👁️‍🗨️" else "👁️",
-                  fontSize = 14.sp,
-                )
-              }
+              Icon(
+                imageVector = if (isMasked) Icons.Rounded.VisibilityOff else Icons.Rounded.Visibility,
+                contentDescription = "Toggle Privacy",
+                tint = colors.muted,
+                modifier = Modifier.size(18.dp),
+              )
             }
           }
 
@@ -210,23 +200,19 @@ fun DashboardBanner(
                 .padding(horizontal = 10.dp, vertical = 8.dp),
               verticalAlignment = Alignment.CenterVertically,
             ) {
-              if (isStandardTheme) {
-                Box(
-                  modifier = Modifier
-                    .size(26.dp)
-                    .clip(CircleShape)
-                    .background(incomeColor.copy(alpha = 0.15f)),
-                  contentAlignment = Alignment.Center,
-                ) {
-                  Icon(
-                    imageVector = Icons.Rounded.ArrowUpward,
-                    contentDescription = null,
-                    tint = incomeColor,
-                    modifier = Modifier.size(15.dp),
-                  )
-                }
-              } else {
-                Text(text = "↑", fontSize = 16.sp, color = incomeColor, fontWeight = FontWeight.Bold)
+              Box(
+                modifier = Modifier
+                  .size(26.dp)
+                  .clip(CircleShape)
+                  .background(incomeColor.copy(alpha = 0.15f)),
+                contentAlignment = Alignment.Center,
+              ) {
+                Icon(
+                  imageVector = Icons.Rounded.ArrowUpward,
+                  contentDescription = null,
+                  tint = incomeColor,
+                  modifier = Modifier.size(15.dp),
+                )
               }
               Spacer(modifier = Modifier.width(6.dp))
               Column {
@@ -255,23 +241,19 @@ fun DashboardBanner(
                 .padding(horizontal = 10.dp, vertical = 8.dp),
               verticalAlignment = Alignment.CenterVertically,
             ) {
-              if (isStandardTheme) {
-                Box(
-                  modifier = Modifier
-                    .size(26.dp)
-                    .clip(CircleShape)
-                    .background(expenseColor.copy(alpha = 0.15f)),
-                  contentAlignment = Alignment.Center,
-                ) {
-                  Icon(
-                    imageVector = Icons.Rounded.ArrowDownward,
-                    contentDescription = null,
-                    tint = expenseColor,
-                    modifier = Modifier.size(15.dp),
-                  )
-                }
-              } else {
-                Text(text = "↓", fontSize = 16.sp, color = expenseColor, fontWeight = FontWeight.Bold)
+              Box(
+                modifier = Modifier
+                  .size(26.dp)
+                  .clip(CircleShape)
+                  .background(expenseColor.copy(alpha = 0.15f)),
+                contentAlignment = Alignment.Center,
+              ) {
+                Icon(
+                  imageVector = Icons.Rounded.ArrowDownward,
+                  contentDescription = null,
+                  tint = expenseColor,
+                  modifier = Modifier.size(15.dp),
+                )
               }
               Spacer(modifier = Modifier.width(6.dp))
               Column {

@@ -64,6 +64,30 @@ class TabunganAppState(
   var toastVisible by mutableStateOf(false)
   var toastMessage by mutableStateOf("")
 
+  var undoMessage by mutableStateOf("")
+  var undoVisible by mutableStateOf(false)
+  var onUndoAction: (() -> Unit)? = null
+  private var undoJob: kotlinx.coroutines.Job? = null
+
+  fun showUndo(message: String, onUndo: () -> Unit) {
+    undoJob?.cancel()
+    undoMessage = message
+    onUndoAction = onUndo
+    undoVisible = true
+    undoJob = scope.launch {
+      kotlinx.coroutines.delay(5000)
+      undoVisible = false
+      onUndoAction = null
+    }
+  }
+
+  fun triggerUndo() {
+    undoJob?.cancel()
+    undoVisible = false
+    onUndoAction?.invoke()
+    onUndoAction = null
+  }
+
   val defaultLang = prefs.getString("app_language", "EN") ?: "EN"
   var currentLang by mutableStateOf(if (defaultLang == "ID") AppLanguage.ID else AppLanguage.EN)
   var currentUser by mutableStateOf<UserProfile?>(null)
@@ -178,6 +202,7 @@ class TabunganAppState(
     achievedGoalIds = achievedGoalIds, strings = strings, context = context,
     onGoalReachEvent = { goalReachEvent = it }, onToast = { toastMessage = it; toastVisible = true },
     transferEntries = transferEntries,
+    loanEntries = loanEntries,
   )
 
   fun loadLoanEntries(userId: String) =

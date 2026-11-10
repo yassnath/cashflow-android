@@ -9,6 +9,8 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -36,7 +38,7 @@ fun LoanEntryCard(
   val noteText = entry.note.ifBlank { "-" }
 
   val isReceivable = entry.isReceivable
-  val badgeText = if (isReceivable) "🟢 Piutang (Dipinjamkan)" else "🔴 Hutang (Pinjaman)"
+  val badgeText = if (isReceivable) "Piutang (Dipinjamkan)" else "Hutang (Pinjaman)"
   val badgeBg = if (isReceivable) Color(0xFF10B981).copy(alpha = 0.12f) else Color(0xFFEF4444).copy(alpha = 0.12f)
   val badgeColor = if (isReceivable) Color(0xFF10B981) else Color(0xFFEF4444)
   val remainingColor = if (remaining > 0) badgeColor else colors.accent2
@@ -62,7 +64,18 @@ fun LoanEntryCard(
             .background(badgeBg)
             .padding(horizontal = 8.dp, vertical = 4.dp),
         ) {
-          Text(text = badgeText, fontSize = 10.sp, fontWeight = FontWeight.Bold, color = badgeColor)
+          Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(5.dp),
+          ) {
+            Box(
+              modifier = Modifier
+                .size(6.dp)
+                .clip(CircleShape)
+                .background(badgeColor),
+            )
+            Text(text = badgeText, fontSize = 10.sp, fontWeight = FontWeight.Bold, color = badgeColor)
+          }
         }
       }
 

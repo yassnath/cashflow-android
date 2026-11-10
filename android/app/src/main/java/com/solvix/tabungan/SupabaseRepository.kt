@@ -344,6 +344,9 @@ object SupabaseRepository {
           put("note", entry.note)
           put("source_method", entry.sourceOrMethod)
           put("channel_bank", entry.channelOrBank)
+          if (entry.receiptUri.isNotBlank()) {
+            put("receipt_url", entry.receiptUri)
+          }
         },
       )
   }
@@ -359,6 +362,9 @@ object SupabaseRepository {
           put("note", entry.note)
           put("source_method", entry.sourceOrMethod)
           put("channel_bank", entry.channelOrBank)
+          if (entry.receiptUri.isNotBlank()) {
+            put("receipt_url", entry.receiptUri)
+          }
         },
       ) {
         filter { eq("id", entry.id) }
@@ -476,6 +482,126 @@ object SupabaseRepository {
         .delete {
           filter { eq("user_id", userId) }
         }
+    }
+  }
+
+  suspend fun fetchSecurityPin(userId: String): SupabaseSecurityPin? {
+    if (userId.isBlank()) return null
+    return runCatching {
+      SupabaseClient.client
+        .from("user_security_settings")
+        .select {
+          filter { eq("user_id", userId) }
+        }
+        .decodeList<SupabaseSecurityPin>()
+        .firstOrNull()
+    }.getOrNull()
+  }
+
+  suspend fun upsertSecurityPin(userId: String, pinHash: String, pinSalt: String, enabled: Boolean) {
+    if (userId.isBlank()) return
+    runCatching {
+      SupabaseClient.client
+        .from("user_security_settings")
+        .upsert(
+          buildJsonObject {
+            put("user_id", userId)
+            put("pin_hash", pinHash)
+            put("pin_salt", pinSalt)
+            put("pin_enabled", enabled)
+            put("updated_at", nowJakartaText())
+          }
+        )
+    }
+  }
+
+  suspend fun deleteSecurityPin(userId: String) {
+    if (userId.isBlank()) return
+    runCatching {
+      SupabaseClient.client
+        .from("user_security_settings")
+        .delete {
+          filter { eq("user_id", userId) }
+        }
+    }
+  }
+
+  suspend fun resetPasswordForEmail(email: String): Result<Unit> {
+    val trimmed = email.trim()
+    if (trimmed.isBlank()) {
+      return Result.failure(IllegalArgumentException("Email tidak boleh kosong"))
+    }
+    return runCatching {
+      SupabaseClient.client.auth.awaitInitialization()
+      SupabaseClient.client.auth.resetPasswordForEmail(trimmed)
+    }
+  }
+
+  suspend fun fetchLoanEntries(userId: String): List<LoanEntry> {
+    if (userId.isBlank()) return emptyList()
+    return try {
+      val rows = SupabaseClient.client
+        .from("loan_entries")
+        .select { filter { eq("user_id", userId) } }
+        .decodeList<SupabaseLoanEntry>()
+      rows.map { it.toLoanEntry() }
+    } catch (_: Throwable) {
+      emptyList()
+    }
+  }
+
+  suspend fun insertLoanEntry(userId: String, entry: LoanEntry) {
+    if (userId.isBlank()) return
+    runCatching {
+      SupabaseClient.client
+        .from("loan_entries")
+        .insert(
+          buildJsonObject {
+            put("id", entry.id)
+            put("user_id", userId)
+            put("type", entry.type)
+            put("title", entry.title)
+            put("principal", entry.principal)
+            put("paid", entry.paid)
+            put("annual_interest_rate", entry.annualInterestRate)
+            put("monthly_payment", entry.monthlyPayment)
+            put("due_date", entry.dueDate)
+            put("note", entry.note)
+            put("linked_expense_id", entry.linkedExpenseId)
+            put("is_receivable", entry.isReceivable)
+          }
+        )
+    }
+  }
+
+  suspend fun updateLoanEntry(entry: LoanEntry) {
+    runCatching {
+      SupabaseClient.client
+        .from("loan_entries")
+        .update(
+          buildJsonObject {
+            put("type", entry.type)
+            put("title", entry.title)
+            put("principal", entry.principal)
+            put("paid", entry.paid)
+            put("annual_interest_rate", entry.annualInterestRate)
+            put("monthly_payment", entry.monthlyPayment)
+            put("due_date", entry.dueDate)
+            put("note", entry.note)
+            put("linked_expense_id", entry.linkedExpenseId)
+            put("is_receivable", entry.isReceivable)
+          }
+        ) {
+          filter { eq("id", entry.id) }
+        }
+    }
+  }
+
+  suspend fun deleteLoanEntry(entryId: String) {
+    runCatching {
+      SupabaseClient.client
+        .from("loan_entries")
+        .delete { filter { eq("id", entryId) } }
     }
   }
 }

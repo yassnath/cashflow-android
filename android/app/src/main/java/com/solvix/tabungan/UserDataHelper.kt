@@ -30,6 +30,7 @@ suspend fun loadUserData(
   onGoalReachEvent: (GoalReachEvent) -> Unit,
   onToast: (String) -> Unit,
   transferEntries: SnapshotStateList<MoneyEntry>? = null,
+  loanEntries: SnapshotStateList<LoanEntry>? = null,
 ) {
   if (userId.isBlank()) return
 
@@ -63,8 +64,23 @@ suspend fun loadUserData(
     }
   }
 
+  // Load local loan cache if needed
+  if (loanEntries != null && loanEntries.isEmpty()) {
+    runCatching {
+      val securePrefs = SecurePrefs.open(context)
+      val cachedLoans = loadLoanEntriesFromPrefs(userId, securePrefs, kotlinx.serialization.json.Json { ignoreUnknownKeys = true })
+      if (cachedLoans.isNotEmpty()) {
+        withContext(Dispatchers.Main) {
+          loanEntries.clear()
+          loanEntries.addAll(cachedLoans)
+        }
+      }
+    }
+  }
+
   // 2. Muat dari Supabase secara sinkronisasi latar
   runCatching { InitialBalanceManager.syncFromCloud(context, userId) }
+  runCatching { AppPinSecurityManager.syncFromCloud(context, userId) }
   val loadedResult = runCatching { fetchUserData(userId, authId) }
   val loaded = loadedResult.getOrNull() ?: return
 
@@ -93,6 +109,23 @@ suspend fun loadUserData(
     transferEntries?.addAll(loaded.transfer)
     dreamEntries.clear()
     dreamEntries.addAll(loaded.dreams)
+    if (loanEntries != null) {
+      if (loaded.loans.isNotEmpty()) {
+        loanEntries.clear()
+        loanEntries.addAll(loaded.loans)
+        runCatching {
+          val securePrefs = SecurePrefs.open(context)
+          persistLoanEntriesToPrefs(userId, loaded.loans, securePrefs, kotlinx.serialization.json.Json { ignoreUnknownKeys = true })
+        }
+      } else if (loanEntries.isNotEmpty()) {
+        val existingLoans = loanEntries.toList()
+        withContext(Dispatchers.IO) {
+          existingLoans.forEach { loan ->
+            runCatching { SupabaseRepository.insertLoanEntry(userId, loan) }
+          }
+        }
+      }
+    }
     updateGoalMilestones(
       incomeEntries = incomeEntries,
       expenseEntries = expenseEntries,

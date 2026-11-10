@@ -75,25 +75,19 @@ fun GhostButton(
   Box(
     modifier = baseModifier
       .heightIn(min = 44.dp)
-      .drawBehind {
-        drawRoundRect(
-          color = colors.cardBorder.copy(alpha = 0.7f),
-          style = Stroke(
-            width = 1.dp.toPx(),
-            pathEffect = PathEffect.dashPathEffect(floatArrayOf(10f, 8f)),
-          ),
-          cornerRadius = CornerRadius(14.dp.toPx()),
-        )
-      }
+      .clip(RoundedCornerShape(14.dp))
+      .background(colors.bg2.copy(alpha = 0.7f))
+      .border(1.dp, colors.cardBorder, RoundedCornerShape(14.dp))
       .clickable(
         onClick = {
           HapticHelper.vibrateClick(context)
           onClick()
         },
-      ),
+      )
+      .padding(horizontal = 16.dp, vertical = 10.dp),
     contentAlignment = Alignment.Center,
   ) {
-    Text(text = text, color = colors.text, fontWeight = FontWeight.SemiBold)
+    Text(text = text, color = colors.text, fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
   }
 }
 

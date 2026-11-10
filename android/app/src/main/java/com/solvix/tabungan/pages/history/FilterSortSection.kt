@@ -4,6 +4,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.Sort
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -14,7 +16,7 @@ fun FilterSortSection(
   onSelectSort: (HistorySortOption) -> Unit,
   strings: AppStrings = LocalStrings.current,
 ) {
-  FilterSection(title = strings["filter_sort_by"].ifBlank { "Urutkan Berdasarkan" }, icon = "↕️") {
+  FilterSection(title = strings["filter_sort_by"].ifBlank { "Urutkan Berdasarkan" }, icon = Icons.AutoMirrored.Rounded.Sort) {
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
       Row(
         modifier = Modifier.fillMaxWidth(),

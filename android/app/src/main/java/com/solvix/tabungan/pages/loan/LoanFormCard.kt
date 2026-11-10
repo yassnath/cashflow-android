@@ -11,6 +11,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.ArrowDownward
+import androidx.compose.material.icons.rounded.ArrowUpward
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -75,9 +80,9 @@ fun LoanFormCard(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
       ) {
         listOf(
-          false to (strings["loan_my_debt"].ifBlank { "🔴 Hutang Saya" }),
-          true to (strings["loan_my_receivable"].ifBlank { "🟢 Piutang Saya" }),
-        ).forEach { (receivable, label) ->
+          Triple(false, strings["loan_my_debt"].ifBlank { "Hutang Saya" }.replace("🔴 ", ""), Icons.Rounded.ArrowDownward),
+          Triple(true, strings["loan_my_receivable"].ifBlank { "Piutang Saya" }.replace("🟢 ", ""), Icons.Rounded.ArrowUpward),
+        ).forEach { (receivable, label, icon) ->
           val isSelected = isReceivable == receivable
           Box(
             modifier = Modifier
@@ -89,12 +94,23 @@ fun LoanFormCard(
               .padding(vertical = 8.dp),
             contentAlignment = Alignment.Center,
           ) {
-            Text(
-              text = label,
-              fontSize = 12.sp,
-              fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-              color = if (isSelected) Color.White else colors.text,
-            )
+            Row(
+              verticalAlignment = Alignment.CenterVertically,
+              horizontalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+              Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = if (isSelected) Color.White else (if (receivable) Color(0xFF10B981) else Color(0xFFEF4444)),
+                modifier = Modifier.size(15.dp),
+              )
+              Text(
+                text = label,
+                fontSize = 12.sp,
+                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                color = if (isSelected) Color.White else colors.text,
+              )
+            }
           }
         }
       }

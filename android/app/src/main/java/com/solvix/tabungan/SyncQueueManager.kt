@@ -42,6 +42,8 @@ enum class SyncActionType {
   DELETE_MONEY_ENTRY,
   UPSERT_INITIAL_BALANCE,
   DELETE_INITIAL_BALANCE,
+  UPSERT_PIN,
+  DELETE_PIN,
 }
 
 enum class SyncStatus {
@@ -60,6 +62,8 @@ data class QueuedSyncItem(
   val accountName: String = "",
   val initialAmount: Long = 0L,
   val moneyEntryJson: String = "",
+  val pinHash: String = "",
+  val pinSalt: String = "",
   val timestamp: Long = System.currentTimeMillis(),
   val retryCount: Int = 0,
 )
@@ -180,6 +184,28 @@ object SyncQueueManager {
     )
   }
 
+  suspend fun enqueueUpsertPin(context: Context, userId: String, pinHash: String, pinSalt: String) {
+    enqueue(
+      context,
+      QueuedSyncItem(
+        actionType = SyncActionType.UPSERT_PIN,
+        userId = userId,
+        pinHash = pinHash,
+        pinSalt = pinSalt,
+      ),
+    )
+  }
+
+  suspend fun enqueueDeletePin(context: Context, userId: String) {
+    enqueue(
+      context,
+      QueuedSyncItem(
+        actionType = SyncActionType.DELETE_PIN,
+        userId = userId,
+      ),
+    )
+  }
+
   /**
    * Memproses antrean dan mengirim semua perubahan ke Supabase secara berurutan.
    */
@@ -222,6 +248,14 @@ object SyncQueueManager {
               SupabaseRepository.deleteInitialBalance(action.userId, action.accountName)
               true
             }
+            SyncActionType.UPSERT_PIN -> {
+              SupabaseRepository.upsertSecurityPin(action.userId, action.pinHash, action.pinSalt, true)
+              true
+            }
+            SyncActionType.DELETE_PIN -> {
+              SupabaseRepository.deleteSecurityPin(action.userId)
+              true
+            }
           }
         } catch (_: Exception) {
           false
@@ -262,9 +296,9 @@ fun SyncStatusPill(
   val (bgColor, dotColor, textColor, label) = when (status) {
     SyncStatus.SYNCED -> {
       SyncStatusVisuals(
-        Color(0xFF10B981).copy(alpha = 0.12f),
+        Color(0xFF10B981).copy(alpha = 0.15f),
         Color(0xFF10B981),
-        Color(0xFF059669),
+        Color(0xFF10B981),
         "Tersinkron",
       )
     }

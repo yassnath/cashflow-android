@@ -14,7 +14,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.solvix.tabungan.pages.dashboard.DashboardAssetsCard
 import com.solvix.tabungan.pages.dashboard.DashboardBurnRateCard
-import com.solvix.tabungan.pages.dashboard.DashboardFabSpeedDial
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
@@ -193,11 +192,5 @@ fun DashboardPage(
 
     Spacer(modifier = Modifier.height(16.dp))
   }
-
-  // Floating Action Button Speed Dial (Ergonomis satu tangan)
-  DashboardFabSpeedDial(
-    onNavigateTo = onNavigateTo,
-    modifier = Modifier.fillMaxWidth(),
-  )
 }
 }

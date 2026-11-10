@@ -1,6 +1,7 @@
 package com.solvix.tabungan.pages.dashboard
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -25,6 +26,7 @@ fun DashboardAssetRow(
   item: AccountAssetItem,
   netBalance: Long,
   pctTotalText: String = "dari total aset",
+  onClick: (() -> Unit)? = null,
 ) {
   val colors = LocalAppColors.current
   val ratio = if (netBalance > 0) (item.balance.toDouble() / netBalance).coerceIn(0.0, 1.0) else 0.0
@@ -35,6 +37,7 @@ fun DashboardAssetRow(
       .fillMaxWidth()
       .clip(RoundedCornerShape(10.dp))
       .background(colors.bg2.copy(alpha = 0.65f))
+      .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
       .padding(horizontal = 12.dp, vertical = 9.dp),
     verticalAlignment = Alignment.CenterVertically,
     horizontalArrangement = Arrangement.SpaceBetween,
