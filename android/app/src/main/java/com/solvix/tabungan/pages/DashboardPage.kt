@@ -8,7 +8,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
@@ -52,6 +54,7 @@ fun DashboardPage(
   val netBalance = totalIncome - totalExpense
   val totalInitial = remember(initialVersion) { InitialBalanceManager.getTotalInitialBalance(context) }
   val effectiveNetBalance = (netBalance.toLong() + totalInitial).toInt()
+  var showDetails by remember { mutableStateOf(false) }
 
   // -- Filter Transaksi Bulan Ini --
   val now = Calendar.getInstance()
@@ -124,22 +127,7 @@ fun DashboardPage(
         netBalance = netBalance.toLong() + totalInitial,
       )
 
-      // 5. Donut Chart - Pemasukan vs Pengeluaran
-    DashboardFlowDonutChart(
-      totalIncome = totalIncome,
-      totalExpense = totalExpense,
-      strings = strings,
-    )
-
-    // 5. Line Chart - Tren Bulanan (Reaktif & Beranimasi)
-    DashboardTrendLineChart(
-      incomeEntries = incomeEntries,
-      expenseEntries = expenseEntries,
-      currentLang = currentLang,
-      strings = strings,
-    )
-
-    // 6. Transaksi Terakhir (Recent Transactions)
+      // 5. Transaksi Terakhir (Recent Transactions)
     DashboardRecentTransactions(
       incomeEntries = incomeEntries,
       expenseEntries = expenseEntries,
@@ -148,47 +136,64 @@ fun DashboardPage(
       onNavigateTo = onNavigateTo,
     )
 
-    // 7. Bar Chart Horizontal - Top 5 Kategori Pengeluaran
-    DashboardTopExpenseBars(
-      thisMonthExpenses = thisMonthExpenses,
-      allExpenseEntries = expenseEntries,
-      strings = strings,
-    )
+      GhostButton(
+        text = if (showDetails) {
+          strings["dashboard_hide_details"].ifBlank { "Sembunyikan analisis lengkap" }
+        } else {
+          strings["dashboard_show_details"].ifBlank { "Lihat analisis lengkap" }
+        },
+        onClick = { showDetails = !showDetails },
+      )
 
-    // 8. Anggaran per Kategori (Category Budgeting)
-    DashboardCategoryBudgets(
-      thisMonthExpenses = thisMonthExpenses,
-      allExpenseEntries = expenseEntries,
-      strings = strings,
-    )
-
-    // 9. Distribusi Metode Pembayaran / Dompet
-    DashboardPaymentMethods(
-      expenseEntries = expenseEntries,
-      strings = strings,
-    )
-
-    // 9. Pengingat Tagihan & Jatuh Tempo
-    DashboardUpcomingBills(
-      loanEntries = loanEntries,
-      dreamEntries = dreamEntries,
-      strings = strings,
-      onNavigateTo = onNavigateTo,
-    )
-
-    // 10. Progres Target Impian
-    DashboardGoalCards(
-      dreamEntries = dreamEntries,
-      strings = strings,
-      onNavigateTo = onNavigateTo,
-    )
-
-    // 11. Ringkasan Hutang & Pinjaman
-    DashboardLoanSummary(
-      loanEntries = loanEntries,
-      strings = strings,
-      onNavigateTo = onNavigateTo,
-    )
+      if (showDetails) {
+        Column(
+          modifier = Modifier.fillMaxWidth(),
+          verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+          // Detail analitik lanjutan ditampilkan sesuai permintaan pengguna.
+          DashboardFlowDonutChart(
+            totalIncome = totalIncome,
+            totalExpense = totalExpense,
+            strings = strings,
+          )
+          DashboardTrendLineChart(
+            incomeEntries = incomeEntries,
+            expenseEntries = expenseEntries,
+            currentLang = currentLang,
+            strings = strings,
+          )
+          DashboardTopExpenseBars(
+            thisMonthExpenses = thisMonthExpenses,
+            allExpenseEntries = expenseEntries,
+            strings = strings,
+          )
+          DashboardCategoryBudgets(
+            thisMonthExpenses = thisMonthExpenses,
+            allExpenseEntries = expenseEntries,
+            strings = strings,
+          )
+          DashboardPaymentMethods(
+            expenseEntries = expenseEntries,
+            strings = strings,
+          )
+          DashboardUpcomingBills(
+            loanEntries = loanEntries,
+            dreamEntries = dreamEntries,
+            strings = strings,
+            onNavigateTo = onNavigateTo,
+          )
+          DashboardGoalCards(
+            dreamEntries = dreamEntries,
+            strings = strings,
+            onNavigateTo = onNavigateTo,
+          )
+          DashboardLoanSummary(
+            loanEntries = loanEntries,
+            strings = strings,
+            onNavigateTo = onNavigateTo,
+          )
+        }
+      }
 
     Spacer(modifier = Modifier.height(16.dp))
   }

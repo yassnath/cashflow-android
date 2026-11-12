@@ -20,6 +20,7 @@ import androidx.compose.material.icons.rounded.AdminPanelSettings
 import androidx.compose.material.icons.rounded.Category
 import androidx.compose.material.icons.rounded.HealthAndSafety
 import androidx.compose.material.icons.rounded.Notifications
+import androidx.compose.material.icons.rounded.MoreHoriz
 import androidx.compose.material.icons.rounded.Schedule
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material.icons.rounded.SmartToy
@@ -293,6 +294,7 @@ fun themeSectionVisualIcon(theme: ThemeName, iconType: String, cartoonEmoji: Str
         "category" -> Icons.Rounded.Category
         "logout" -> Icons.AutoMirrored.Rounded.Logout
         "admin" -> Icons.Rounded.AdminPanelSettings
+        "more" -> Icons.Rounded.MoreHoriz
         else -> null
       }
       if (vector != null) {

@@ -136,7 +136,7 @@ fun DashboardFabSpeedDial(
         Icon(
           imageVector = Icons.Rounded.Add,
           contentDescription = "Menu Cepat",
-          tint = Color.White,
+          tint = colors.onGradient,
           modifier = Modifier
             .size(28.dp)
             .rotate(rotation),
@@ -177,7 +177,7 @@ private fun SpeedDialItem(
 
     Box(
       modifier = Modifier
-        .size(42.dp)
+        .size(44.dp)
         .shadow(4.dp, CircleShape)
         .clip(CircleShape)
         .background(badgeColor),

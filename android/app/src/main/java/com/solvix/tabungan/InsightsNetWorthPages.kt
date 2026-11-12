@@ -186,17 +186,17 @@ private fun InsightCard(
         Box(
           modifier = Modifier
             .weight(1f)
-            .heightIn(min = 38.dp)
+            .heightIn(min = 44.dp)
             .clip(RoundedCornerShape(10.dp))
             .background(Brush.linearGradient(listOf(colors.accent, colors.accent2)))
             .clickable { onAction() },
           contentAlignment = Alignment.Center,
         ) {
-          Text(text = item.actionCta, color = Color.White, fontWeight = FontWeight.SemiBold, fontSize = 12.sp)
+          Text(text = item.actionCta, color = colors.onGradient, fontWeight = FontWeight.SemiBold, fontSize = 12.sp)
         }
         Box(
           modifier = Modifier
-            .size(38.dp)
+            .size(44.dp)
             .clip(CircleShape)
             .background(colors.bg2)
             .border(1.dp, colors.cardBorder, CircleShape)
@@ -205,7 +205,7 @@ private fun InsightCard(
         ) { Text("👍") }
         Box(
           modifier = Modifier
-            .size(38.dp)
+            .size(44.dp)
             .clip(CircleShape)
             .background(colors.bg2)
             .border(1.dp, colors.cardBorder, CircleShape)

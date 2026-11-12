@@ -57,7 +57,7 @@ fun GradientButton(
       ),
     contentAlignment = Alignment.Center,
   ) {
-    val textColor = if (enabled) Color.White else colors.text.copy(alpha = 0.6f)
+    val textColor = if (enabled) colors.onGradient else colors.text.copy(alpha = 0.6f)
     Text(text = text, color = textColor, fontWeight = FontWeight.Bold)
   }
 }
@@ -103,7 +103,7 @@ fun OutlineButton(
   val baseModifier = if (fillMaxWidth) modifier.fillMaxWidth() else modifier
   Box(
     modifier = baseModifier
-      .heightIn(min = 40.dp)
+      .heightIn(min = 44.dp)
       .clip(RoundedCornerShape(12.dp))
       .background(colors.card)
       .border(1.5.dp, colors.accent, RoundedCornerShape(12.dp))
@@ -132,7 +132,7 @@ fun DangerButton(
   val baseModifier = if (fillMaxWidth) modifier.fillMaxWidth() else modifier
   Box(
     modifier = baseModifier
-      .heightIn(min = 40.dp)
+      .heightIn(min = 44.dp)
       .clip(RoundedCornerShape(12.dp))
       .background(colors.danger.copy(alpha = 0.12f))
       .border(1.dp, colors.danger.copy(alpha = 0.4f), RoundedCornerShape(12.dp))
@@ -163,6 +163,7 @@ fun ChipButton(
       .background(colors.accent.copy(alpha = 0.08f))
       .border(1.dp, borderColor, RoundedCornerShape(999.dp))
       .clickable(onClick = onClick)
+      .heightIn(min = 44.dp)
       .padding(horizontal = 10.dp, vertical = 5.dp),
     contentAlignment = Alignment.Center,
   ) {
@@ -202,6 +203,7 @@ fun ChipToggle(
           .clip(RoundedCornerShape(999.dp))
           .then(chipModifier)
           .clickable { onSelect(index) }
+          .heightIn(min = 44.dp)
           .padding(horizontal = 12.dp, vertical = 6.dp),
         contentAlignment = Alignment.Center,
       ) {
@@ -209,7 +211,7 @@ fun ChipToggle(
           text = option,
           fontSize = 11.sp,
           fontWeight = FontWeight.Bold,
-          color = if (active) Color.White else colors.text,
+          color = if (active) colors.onGradient else colors.text,
         )
       }
       if (index != options.lastIndex) {

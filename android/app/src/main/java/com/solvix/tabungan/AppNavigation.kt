@@ -49,18 +49,31 @@ enum class Page(val label: String, val icon: String) {
   Themes("Tema", "🎨"),
 }
 
+private data class BottomNavItem(
+  val page: Page?,
+  val isMore: Boolean = false,
+)
+
 fun Page.showHero(): Boolean = this == Page.Income || this == Page.Expense
 
 @Composable
 fun BottomNav(
   current: Page,
   onSelect: (Page) -> Unit,
+  onMoreClick: () -> Unit,
   strings: AppStrings,
   theme: ThemeName,
   modifier: Modifier = Modifier,
 ) {
   val colors = LocalAppColors.current
-  val items = listOf(Page.Dashboard, Page.Income, Page.Expense, Page.History)
+  val primaryPages = setOf(Page.Dashboard, Page.Income, Page.Expense, Page.History)
+  val items = listOf(
+    BottomNavItem(Page.Dashboard),
+    BottomNavItem(Page.Income),
+    BottomNavItem(Page.Expense),
+    BottomNavItem(Page.History),
+    BottomNavItem(page = null, isMore = true),
+  )
   val navShape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)
   Row(
     modifier = modifier
@@ -69,34 +82,38 @@ fun BottomNav(
       .navigationBarsPadding()
       .clip(navShape)
       .background(colors.card)
-      .border(2.dp, colors.accent, navShape)
+      .border(1.dp, colors.accent.copy(alpha = 0.35f), navShape)
       .padding(horizontal = 10.dp, vertical = 8.dp),
     horizontalArrangement = Arrangement.SpaceBetween,
   ) {
     items.forEach { item ->
-      val active = current == item
+      val active = item.page?.let { current == it } ?: (current !in primaryPages)
       val indicatorProgress by animateFloatAsState(
         targetValue = if (active) 1f else 0f,
         animationSpec = tween(durationMillis = 260),
-        label = "bottom-nav-indicator-${item.name}",
+        label = "bottom-nav-indicator-${item.page?.name ?: "more"}",
       )
       Column(
         modifier = Modifier
           .weight(1f)
           .padding(horizontal = 3.dp, vertical = 4.dp)
           .offset(y = 5.dp)
-          .clickable { onSelect(item) },
+          .clickable {
+            if (item.page != null) onSelect(item.page) else onMoreClick()
+          },
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
       ) {
         ThemedIconView(
-          icon = themePageVisualIcon(theme, item),
+          icon = item.page?.let { themePageVisualIcon(theme, it) }
+            ?: themeSectionVisualIcon(theme, "more", "☰"),
           tint = if (active) colors.accent else colors.muted,
           size = 26.dp,
         )
         Spacer(modifier = Modifier.height(3.dp))
         Text(
-          text = pageLabel(item, strings),
+           text = item.page?.let { pageLabel(it, strings) }
+             ?: strings["page_more"].ifBlank { "Lainnya" },
           fontSize = 11.sp,
           fontWeight = FontWeight.SemiBold,
           color = if (active) colors.text else colors.muted,

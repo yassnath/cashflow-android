@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.size
@@ -147,7 +148,7 @@ fun HistoryImportModal(
           Box(
             modifier = Modifier
               .weight(1f)
-              .height(42.dp)
+              .heightIn(min = 44.dp)
               .clip(RoundedCornerShape(10.dp))
               .background(colors.bg2)
               .border(1.dp, colors.cardBorder, RoundedCornerShape(10.dp))
@@ -160,7 +161,7 @@ fun HistoryImportModal(
           Box(
             modifier = Modifier
               .weight(1.5f)
-              .height(42.dp)
+              .heightIn(min = 44.dp)
               .clip(RoundedCornerShape(10.dp))
               .background(Brush.linearGradient(listOf(colors.accent, colors.accent2)))
               .clickable {
@@ -169,7 +170,7 @@ fun HistoryImportModal(
               },
             contentAlignment = Alignment.Center,
           ) {
-            Text(text = strings["history_import_confirm"].ifBlank { "Impor Sekarang" }, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+            Text(text = strings["history_import_confirm"].ifBlank { "Impor Sekarang" }, color = colors.onGradient, fontWeight = FontWeight.Bold, fontSize = 12.sp)
           }
         }
       }

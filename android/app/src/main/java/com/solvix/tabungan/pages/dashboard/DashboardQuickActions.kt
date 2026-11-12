@@ -131,11 +131,12 @@ private fun QuickActionButton(
       )
       Text(
         text = label,
-        fontSize = 10.sp,
+        fontSize = 12.sp,
         fontWeight = FontWeight.SemiBold,
         color = colors.text,
-        maxLines = 1,
+        maxLines = 2,
         overflow = TextOverflow.Ellipsis,
+        textAlign = androidx.compose.ui.text.style.TextAlign.Center,
       )
     }
   }

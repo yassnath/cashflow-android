@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -63,6 +64,7 @@ fun FilterTypeAmountSection(
                 shape = RoundedCornerShape(8.dp),
               )
               .clickable { onSelectType(type) }
+              .heightIn(min = 44.dp)
               .padding(vertical = 7.dp),
             contentAlignment = Alignment.Center,
           ) {
@@ -70,7 +72,7 @@ fun FilterTypeAmountSection(
               text = label,
               fontSize = 11.sp,
               fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-              color = if (isSelected) Color.White else colors.text,
+              color = if (isSelected) colors.onGradient else colors.text,
             )
           }
         }

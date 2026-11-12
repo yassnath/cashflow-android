@@ -131,7 +131,7 @@ fun ReportPage(
           text = "📊 " + strings["report_tab_analytics"].ifBlank { "Grafik & Tren" },
           fontWeight = FontWeight.Bold,
           fontSize = 12.sp,
-          color = if (reportTab == "analytics") Color.White else colors.muted,
+          color = if (reportTab == "analytics") colors.onGradient else colors.muted,
         )
       }
 
@@ -148,7 +148,7 @@ fun ReportPage(
           text = "📅 " + strings["report_tab_calendar"].ifBlank { "Kalender Arus Kas" },
           fontWeight = FontWeight.Bold,
           fontSize = 12.sp,
-          color = if (reportTab == "calendar") Color.White else colors.muted,
+          color = if (reportTab == "calendar") colors.onGradient else colors.muted,
         )
       }
     }
@@ -183,7 +183,7 @@ fun ReportPage(
           ) {
             Text(
               text = strings["report_monthly"],
-              color = Color.White,
+              color = colors.onGradient,
               fontWeight = FontWeight.Bold,
               modifier = Modifier.clickable { modeIndex = 0 },
             )
@@ -198,7 +198,7 @@ fun ReportPage(
           ) {
             Text(
               text = strings["report_yearly"],
-              color = Color.White,
+              color = colors.onGradient,
               fontWeight = FontWeight.Bold,
               modifier = Modifier.clickable { modeIndex = 1 },
             )

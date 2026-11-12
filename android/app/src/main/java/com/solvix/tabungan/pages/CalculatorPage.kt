@@ -84,14 +84,14 @@ fun CalculatorPage(
           Icon(
             imageVector = Icons.Rounded.Calculate,
             contentDescription = null,
-            tint = if (activeTab == "calculator") Color.White else colors.muted,
+            tint = if (activeTab == "calculator") colors.onGradient else colors.muted,
             modifier = Modifier.size(16.dp),
           )
           Text(
             text = strings["tab_standard_calc"].ifBlank { "Kalkulator" },
             fontWeight = FontWeight.Bold,
             fontSize = 12.sp,
-            color = if (activeTab == "calculator") Color.White else colors.muted,
+            color = if (activeTab == "calculator") colors.onGradient else colors.muted,
           )
         }
       }
@@ -112,14 +112,14 @@ fun CalculatorPage(
           Icon(
             imageVector = Icons.Rounded.Groups,
             contentDescription = null,
-            tint = if (activeTab == "split_bill") Color.White else colors.muted,
+            tint = if (activeTab == "split_bill") colors.onGradient else colors.muted,
             modifier = Modifier.size(16.dp),
           )
           Text(
             text = strings["tab_split_bill"].ifBlank { "Bagi Tagihan" },
             fontWeight = FontWeight.Bold,
             fontSize = 12.sp,
-            color = if (activeTab == "split_bill") Color.White else colors.muted,
+            color = if (activeTab == "split_bill") colors.onGradient else colors.muted,
           )
         }
       }
@@ -190,7 +190,7 @@ private fun RowScope.CalculatorKey(label: String, onPress: () -> Unit, isPrimary
     Modifier.background(color = backgroundColor)
   }
   val textColor = when {
-    isPrimary -> Color.White
+    isPrimary -> colors.onGradient
     label == "C" || label == "⌫" -> colors.danger
     isOperator -> colors.accent
     isFunction -> colors.accent2

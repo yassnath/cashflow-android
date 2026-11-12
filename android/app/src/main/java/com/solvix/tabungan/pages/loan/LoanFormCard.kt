@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -91,6 +92,7 @@ fun LoanFormCard(
               .background(if (isSelected) colors.accent else colors.bg2)
               .border(1.dp, if (isSelected) colors.accent else colors.cardBorder, RoundedCornerShape(10.dp))
               .clickable { onIsReceivableChange(receivable) }
+              .heightIn(min = 44.dp)
               .padding(vertical = 8.dp),
             contentAlignment = Alignment.Center,
           ) {
@@ -101,14 +103,14 @@ fun LoanFormCard(
               Icon(
                 imageVector = icon,
                 contentDescription = null,
-                tint = if (isSelected) Color.White else (if (receivable) Color(0xFF10B981) else Color(0xFFEF4444)),
+                tint = if (isSelected) colors.onGradient else (if (receivable) Color(0xFF10B981) else Color(0xFFEF4444)),
                 modifier = Modifier.size(15.dp),
               )
               Text(
                 text = label,
                 fontSize = 12.sp,
                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                color = if (isSelected) Color.White else colors.text,
+                color = if (isSelected) colors.onGradient else colors.text,
               )
             }
           }

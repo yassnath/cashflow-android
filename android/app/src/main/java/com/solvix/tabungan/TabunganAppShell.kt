@@ -22,6 +22,7 @@ fun TabunganAppShell(state: TabunganAppState) {
     currentLang = state.currentLang,
     currentPage = state.currentPage,
     summaryRange = state.summaryRange,
+    onSummaryRangeChange = { state.summaryRange = it },
     insightsTimeframe = state.insightsTimeframe,
     insightsRefreshing = state.insightsRefreshing,
     aiReplyLoading = state.aiReplyLoading,

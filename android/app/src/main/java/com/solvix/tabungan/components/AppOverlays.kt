@@ -93,6 +93,7 @@ fun LoadingOverlay(
   showLoading: Boolean,
   loadingAlpha: Float,
 ) {
+  val colors = LocalAppColors.current
   AnimatedVisibility(
     visible = showLoading,
     enter = fadeIn(tween(600)),
@@ -101,7 +102,7 @@ fun LoadingOverlay(
     Box(
       modifier = Modifier
         .fillMaxSize()
-        .background(Color.White)
+        .background(colors.bg)
         .alpha(loadingAlpha),
       contentAlignment = Alignment.Center,
     ) {
@@ -189,7 +190,7 @@ fun AlertModal(
         Icon(
           imageVector = Icons.Rounded.Info,
           contentDescription = null,
-          tint = Color.White,
+          tint = colors.onGradient,
           modifier = Modifier.size(28.dp),
         )
       }
@@ -322,7 +323,7 @@ fun AppConfirmationDialog(
             ) {
               Text(
                 text = confirmText,
-                color = Color.White,
+                color = if (isDestructive) colors.onDanger else colors.onGradient,
                 fontWeight = FontWeight.Bold,
                 fontSize = 13.sp,
               )

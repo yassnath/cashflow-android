@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -136,6 +137,7 @@ fun TopBar(
           .background(colors.accent.copy(alpha = 0.12f))
           .border(1.dp, colors.accent.copy(alpha = 0.45f), RoundedCornerShape(999.dp))
           .clickable(onClick = onProfileClick)
+          .heightIn(min = 44.dp)
           .padding(horizontal = 10.dp, vertical = 6.dp)
           .onGloballyPositioned { coordinates ->
             val rect = coordinates.boundsInWindow()
@@ -194,7 +196,7 @@ fun TopBar(
             }
             Box(
               modifier = Modifier
-                .size(28.dp)
+                .size(44.dp)
                 .clip(CircleShape)
                 .background(colors.bg2)
                 .padding(4.dp)

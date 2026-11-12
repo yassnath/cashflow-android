@@ -228,7 +228,7 @@ fun AccountLedgerModal(
 
           Box(
             modifier = Modifier
-              .size(32.dp)
+            .size(44.dp)
               .clip(CircleShape)
               .background(colors.bg2)
               .clickable { onDismiss() },
@@ -327,6 +327,7 @@ fun AccountLedgerModal(
                 .clip(RoundedCornerShape(8.dp))
                 .background(if (isSelected) colors.accent else colors.bg2)
                 .clickable { selectedFilter = filter }
+                .heightIn(min = 44.dp)
                 .padding(vertical = 7.dp),
               contentAlignment = Alignment.Center,
             ) {
@@ -334,7 +335,7 @@ fun AccountLedgerModal(
                 text = label,
                 fontSize = 11.sp,
                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                color = if (isSelected) Color.White else colors.text,
+                color = if (isSelected) colors.onGradient else colors.text,
               )
             }
           }

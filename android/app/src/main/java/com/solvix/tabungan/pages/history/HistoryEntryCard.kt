@@ -96,7 +96,7 @@ fun EntryCard(
               contentAlignment = Alignment.Center,
             ) {
               if (isSelected) {
-                Text(text = "✓", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                Text(text = "✓", color = colors.onGradient, fontSize = 12.sp, fontWeight = FontWeight.Bold)
               }
             }
           }
@@ -175,24 +175,24 @@ fun EntryCard(
           Box(
             modifier = Modifier
               .weight(1f)
-              .heightIn(min = 38.dp)
+              .heightIn(min = 44.dp)
               .clip(RoundedCornerShape(10.dp))
               .background(Brush.linearGradient(listOf(colors.accent, colors.accent2)))
               .clickable { onEdit(entry) },
             contentAlignment = Alignment.Center,
           ) {
-            Text(text = strings["edit"], color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+            Text(text = strings["edit"], color = colors.onGradient, fontWeight = FontWeight.Bold, fontSize = 13.sp)
           }
           Box(
             modifier = Modifier
               .weight(1f)
-              .heightIn(min = 38.dp)
+              .heightIn(min = 44.dp)
               .clip(RoundedCornerShape(10.dp))
               .background(Brush.linearGradient(listOf(colors.danger, colors.danger.copy(alpha = 0.85f))))
               .clickable { onDelete(entry) },
             contentAlignment = Alignment.Center,
           ) {
-            Text(text = strings["delete"], color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+            Text(text = strings["delete"], color = colors.onDanger, fontWeight = FontWeight.Bold, fontSize = 13.sp)
           }
         }
       }

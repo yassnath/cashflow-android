@@ -101,7 +101,7 @@ fun RecurringSubscriptionsModal(
               color = colors.muted,
             )
           }
-          IconButton(onClick = onDismiss, modifier = Modifier.size(28.dp)) {
+          IconButton(onClick = onDismiss, modifier = Modifier.size(44.dp)) {
             Icon(imageVector = Icons.Rounded.Close, contentDescription = strings["close"], tint = colors.muted)
           }
         }
@@ -246,13 +246,13 @@ fun RecurringSubscriptionsModal(
         Box(
           modifier = Modifier
             .fillMaxWidth()
-            .height(40.dp)
+          .heightIn(min = 44.dp)
             .clip(RoundedCornerShape(10.dp))
             .background(Brush.linearGradient(listOf(colors.accent, colors.accent2)))
             .clickable { onDismiss() },
           contentAlignment = Alignment.Center,
         ) {
-          Text(text = strings["close"].ifBlank { "Tutup" }, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+          Text(text = strings["close"].ifBlank { "Tutup" }, color = colors.onGradient, fontWeight = FontWeight.Bold, fontSize = 13.sp)
         }
       }
     }

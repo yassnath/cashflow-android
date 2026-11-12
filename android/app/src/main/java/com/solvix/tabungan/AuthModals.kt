@@ -130,7 +130,7 @@ fun RowScope.AuthTabButton(text: String, active: Boolean, onClick: () -> Unit) {
     Text(
       text = text,
       fontWeight = FontWeight.Bold,
-      color = if (active) Color.White else colors.text,
+      color = if (active) colors.onGradient else colors.text,
     )
   }
 }

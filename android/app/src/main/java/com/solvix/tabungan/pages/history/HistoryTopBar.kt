@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
@@ -89,7 +90,7 @@ fun HistoryTopBar(
         ) {
           Box(
             modifier = Modifier
-              .size(32.dp)
+              .size(44.dp)
               .clip(CircleShape)
               .background(colors.bg2)
               .clickable { onToggleSelectionMode() },
@@ -119,6 +120,7 @@ fun HistoryTopBar(
               .clip(RoundedCornerShape(8.dp))
               .background(colors.bg2)
               .clickable { onSelectAll() }
+              .heightIn(min = 44.dp)
               .padding(horizontal = 10.dp, vertical = 6.dp),
             contentAlignment = Alignment.Center,
           ) {
@@ -135,6 +137,7 @@ fun HistoryTopBar(
               .clip(RoundedCornerShape(8.dp))
               .background(if (selectedCount > 0) colors.danger else colors.danger.copy(alpha = 0.3f))
               .clickable(enabled = selectedCount > 0) { onDeleteSelected() }
+              .heightIn(min = 44.dp)
               .padding(horizontal = 12.dp, vertical = 6.dp),
             contentAlignment = Alignment.Center,
           ) {
@@ -145,14 +148,14 @@ fun HistoryTopBar(
               Icon(
                 imageVector = Icons.Rounded.Delete,
                 contentDescription = null,
-                tint = Color.White,
+                tint = colors.onDanger,
                 modifier = Modifier.size(16.dp),
               )
               Text(
                 text = "Hapus",
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color.White,
+                color = colors.onDanger,
               )
             }
           }
@@ -180,7 +183,7 @@ fun HistoryTopBar(
           // Tombol Checklist Mode Seleksi
           Box(
             modifier = Modifier
-              .size(42.dp)
+              .size(44.dp)
               .clip(RoundedCornerShape(12.dp))
               .background(colors.bg2)
               .border(1.dp, colors.cardBorder, RoundedCornerShape(12.dp))
@@ -198,7 +201,7 @@ fun HistoryTopBar(
           // Tombol Icon Filter Pop-up (hanya icon, dengan badge jika ada filter aktif)
           Box(
             modifier = Modifier
-              .size(42.dp)
+              .size(44.dp)
               .clip(RoundedCornerShape(12.dp))
               .background(if (activeFilterCount > 0) colors.accent.copy(alpha = 0.15f) else colors.bg2)
               .border(
@@ -227,7 +230,7 @@ fun HistoryTopBar(
               ) {
                 Text(
                   text = activeFilterCount.toString(),
-                  color = Color.White,
+                  color = colors.onGradient,
                   fontSize = 9.sp,
                   fontWeight = FontWeight.Bold,
                 )
@@ -239,7 +242,7 @@ fun HistoryTopBar(
           Box {
             Box(
               modifier = Modifier
-                .height(42.dp)
+                .heightIn(min = 44.dp)
                 .clip(RoundedCornerShape(12.dp))
                 .background(colors.bg2)
                 .border(1.dp, colors.cardBorder, RoundedCornerShape(12.dp))

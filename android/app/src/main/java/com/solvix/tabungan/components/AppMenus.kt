@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -108,6 +109,7 @@ fun ActionSnackbar(
           modifier = Modifier
             .clip(RoundedCornerShape(6.dp))
             .clickable(onClick = onActionClick)
+          .heightIn(min = 44.dp)
             .padding(horizontal = 8.dp, vertical = 4.dp),
         )
       }
@@ -216,6 +218,7 @@ fun MenuItem(
   Row(
     modifier = Modifier
       .fillMaxWidth()
+      .heightIn(min = 44.dp)
       .clip(RoundedCornerShape(12.dp))
       .then(bgModifier)
       .clickable(onClick = onClick)
@@ -226,7 +229,7 @@ fun MenuItem(
       icon = icon,
       containerSize = 30.dp,
       iconSize = 16.dp,
-      tint = if (active) Color.White else itemColor,
+      tint = if (active) colors.onGradient else itemColor,
       bgAlpha = if (active) 0.35f else 0.12f,
     )
     Spacer(modifier = Modifier.width(10.dp))
@@ -234,7 +237,7 @@ fun MenuItem(
       text = text,
       fontWeight = FontWeight.SemiBold,
       fontSize = 13.sp,
-      color = if (active) Color.White else itemColor,
+      color = if (active) colors.onGradient else itemColor,
     )
   }
 }

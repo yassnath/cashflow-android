@@ -75,7 +75,7 @@ fun ReceiptPreviewModal(
           verticalAlignment = Alignment.CenterVertically,
         ) {
           Text(text = strings["receipt_preview_title"].ifBlank { "Foto Bukti Transaksi" }, fontWeight = FontWeight.Bold, fontSize = 15.sp, color = colors.text)
-          IconButton(onClick = onDismiss, modifier = Modifier.size(24.dp)) {
+          IconButton(onClick = onDismiss, modifier = Modifier.size(44.dp)) {
             Icon(imageVector = Icons.Rounded.Close, contentDescription = strings["close"], tint = colors.muted)
           }
         }
@@ -106,13 +106,13 @@ fun ReceiptPreviewModal(
         Box(
           modifier = Modifier
             .fillMaxWidth()
-            .height(38.dp)
+            .heightIn(min = 44.dp)
             .clip(RoundedCornerShape(10.dp))
             .background(colors.accent)
             .clickable { onDismiss() },
           contentAlignment = Alignment.Center,
         ) {
-          Text(text = strings["close"].ifBlank { "Tutup" }, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+          Text(text = strings["close"].ifBlank { "Tutup" }, color = colors.onGradient, fontWeight = FontWeight.Bold, fontSize = 13.sp)
         }
       }
     }

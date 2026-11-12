@@ -146,7 +146,7 @@ fun DashboardAssetsCard(
         Box(
           modifier = Modifier
             .weight(1f)
-            .heightIn(min = 38.dp)
+            .heightIn(min = 44.dp)
             .clip(RoundedCornerShape(AppDimens.radiusSm))
             .background(colors.bg2)
             .border(1.dp, colors.cardBorder, RoundedCornerShape(AppDimens.radiusSm))
@@ -187,7 +187,7 @@ fun DashboardAssetsCard(
         Box(
           modifier = Modifier
             .weight(1f)
-            .heightIn(min = 38.dp)
+            .heightIn(min = 44.dp)
             .clip(RoundedCornerShape(AppDimens.radiusSm))
             .background(colors.accent.copy(alpha = 0.12f))
             .border(1.dp, colors.accent.copy(alpha = 0.35f), RoundedCornerShape(AppDimens.radiusSm))
@@ -256,7 +256,7 @@ fun DashboardAssetsCard(
                 text = "Atur",
                 fontSize = 10.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color.White,
+                color = colors.onGradient,
               )
             }
           }
@@ -299,6 +299,7 @@ fun DashboardAssetsCard(
             modifier = Modifier
               .fillMaxWidth()
               .clickable { expanded = !expanded }
+              .heightIn(min = 44.dp)
               .padding(vertical = 4.dp),
             contentAlignment = Alignment.Center,
           ) {

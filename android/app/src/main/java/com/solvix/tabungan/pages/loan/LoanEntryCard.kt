@@ -113,24 +113,24 @@ fun LoanEntryCard(
         Box(
           modifier = Modifier
             .weight(1f)
-            .heightIn(min = 38.dp)
+            .heightIn(min = 44.dp)
             .clip(RoundedCornerShape(10.dp))
             .background(Brush.linearGradient(listOf(colors.accent, colors.accent2)))
             .clickable { onEdit() },
           contentAlignment = Alignment.Center,
         ) {
-          Text(text = strings["edit"], color = Color.White, fontWeight = FontWeight.SemiBold, fontSize = 12.sp)
+          Text(text = strings["edit"], color = colors.onGradient, fontWeight = FontWeight.SemiBold, fontSize = 12.sp)
         }
         Box(
           modifier = Modifier
             .weight(1f)
-            .heightIn(min = 38.dp)
+            .heightIn(min = 44.dp)
             .clip(RoundedCornerShape(10.dp))
             .background(Color(0xFFD32F2F))
             .clickable { onDelete() },
           contentAlignment = Alignment.Center,
         ) {
-          Text(text = strings["delete"], color = Color.White, fontWeight = FontWeight.SemiBold, fontSize = 12.sp)
+          Text(text = strings["delete"], color = colors.onDanger, fontWeight = FontWeight.SemiBold, fontSize = 12.sp)
         }
       }
     }

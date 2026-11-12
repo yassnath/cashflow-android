@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
@@ -169,6 +170,7 @@ fun LoanTrackingPage(
               .background(if (isSelected) colors.accent else colors.bg2)
               .border(1.dp, if (isSelected) colors.accent else colors.cardBorder, RoundedCornerShape(8.dp))
               .clickable { selectedTab = tab }
+              .heightIn(min = 44.dp)
               .padding(vertical = 7.dp),
             contentAlignment = Alignment.Center,
           ) {
@@ -176,7 +178,7 @@ fun LoanTrackingPage(
               text = label,
               fontSize = 11.sp,
               fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-              color = if (isSelected) Color.White else colors.text,
+              color = if (isSelected) colors.onGradient else colors.text,
             )
           }
         }

@@ -85,6 +85,10 @@ fun ThemeCard(
   val shadowColor = Color.Black.copy(alpha = 0.18f)
   val borderColor = if (active) colors.accent else colors.cardBorder
   val elevation by animateFloatAsState(if (active) 8f else 2f, label = "theme-elevation")
+  val isDarkCard = (background.red * 0.299f + background.green * 0.587f + background.blue * 0.114f) < 0.45f
+  val textColor = if (isDarkCard) Color.White else Color(0xFF0F172A)
+  val iconBg = if (isDarkCard) Color.White.copy(alpha = 0.15f) else Color.White.copy(alpha = 0.85f)
+
   Row(
     modifier = modifier
       .fillMaxWidth()
@@ -101,7 +105,7 @@ fun ThemeCard(
         modifier = Modifier
           .size(36.dp)
           .clip(CircleShape)
-          .background(Color.White.copy(alpha = 0.7f)),
+          .background(iconBg),
         contentAlignment = Alignment.Center,
       ) {
         Text(text = emoji, fontSize = 20.sp)
@@ -111,7 +115,7 @@ fun ThemeCard(
         text = label,
         fontWeight = FontWeight.Bold,
         fontSize = 14.sp,
-        color = Color(0xFF1E2434), // Selalu kontras tinggi terhadap latar pastel kartu tema
+        color = textColor,
       )
     }
 
@@ -125,7 +129,7 @@ fun ThemeCard(
       ) {
         Text(
           text = "✓ Aktif",
-          color = Color.White,
+          color = colors.onGradient,
           fontSize = 11.sp,
           fontWeight = FontWeight.Bold,
         )

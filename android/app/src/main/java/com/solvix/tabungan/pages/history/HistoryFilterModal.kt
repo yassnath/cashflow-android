@@ -119,7 +119,7 @@ fun HistoryFilterModal(
               color = colors.muted,
             )
           }
-          IconButton(onClick = onDismiss, modifier = Modifier.size(28.dp)) {
+          IconButton(onClick = onDismiss, modifier = Modifier.size(44.dp)) {
             Icon(imageVector = Icons.Rounded.Close, contentDescription = strings["close"], tint = colors.muted)
           }
         }
@@ -248,8 +248,8 @@ fun HistoryFilterModal(
               verticalAlignment = Alignment.CenterVertically,
               horizontalArrangement = Arrangement.spacedBy(6.dp),
             ) {
-              Icon(imageVector = Icons.Rounded.Search, contentDescription = strings["search"], tint = Color.White, modifier = Modifier.size(16.dp))
-              Text(text = strings["filter_apply"].ifBlank { "Cari / Terapkan" }, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+              Icon(imageVector = Icons.Rounded.Search, contentDescription = strings["search"], tint = colors.onGradient, modifier = Modifier.size(16.dp))
+              Text(text = strings["filter_apply"].ifBlank { "Cari / Terapkan" }, color = colors.onGradient, fontWeight = FontWeight.Bold, fontSize = 13.sp)
             }
           }
         }

@@ -20,34 +20,34 @@ fun ThemesPage(currentTheme: ThemeName, onThemeSelected: (ThemeName) -> Unit) {
   Column {
     SectionTitle(icon = themePageVisualIcon(LocalThemeName.current, Page.Themes), title = strings["section_themes_title"], subtitle = strings["section_themes_subtitle"])
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-      ThemeCard(themeAppIcon(ThemeName.StandardLight), strings["theme_standard_light"], currentTheme == ThemeName.StandardLight, Color(0xFFFFF6E7)) {
+      ThemeCard(themeAppIcon(ThemeName.StandardLight), strings["theme_standard_light"], currentTheme == ThemeName.StandardLight, Color(0xFFEEF4FF)) {
         onThemeSelected(ThemeName.StandardLight)
       }
-      ThemeCard(themeAppIcon(ThemeName.StandardDark), strings["theme_standard_dark"], currentTheme == ThemeName.StandardDark, Color(0xFFE6EBFF)) {
+      ThemeCard(themeAppIcon(ThemeName.StandardDark), strings["theme_standard_dark"], currentTheme == ThemeName.StandardDark, Color(0xFF141C30)) {
         onThemeSelected(ThemeName.StandardDark)
       }
-      ThemeCard(themeAppIcon(ThemeName.CartoonFood), strings["theme_food"], currentTheme == ThemeName.CartoonFood, Color(0xFFFFF0DC)) {
+      ThemeCard(themeAppIcon(ThemeName.CartoonFood), strings["theme_food"], currentTheme == ThemeName.CartoonFood, Color(0xFFFFEEDB)) {
         onThemeSelected(ThemeName.CartoonFood)
       }
-      ThemeCard(themeAppIcon(ThemeName.CartoonSpace), strings["theme_space"], currentTheme == ThemeName.CartoonSpace, Color(0xFFE3E9FF)) {
+      ThemeCard(themeAppIcon(ThemeName.CartoonSpace), strings["theme_space"], currentTheme == ThemeName.CartoonSpace, Color(0xFF171B42)) {
         onThemeSelected(ThemeName.CartoonSpace)
       }
-      ThemeCard(themeAppIcon(ThemeName.CartoonMonster), strings["theme_monster"], currentTheme == ThemeName.CartoonMonster, Color(0xFFE9FFF2)) {
+      ThemeCard(themeAppIcon(ThemeName.CartoonMonster), strings["theme_monster"], currentTheme == ThemeName.CartoonMonster, Color(0xFFD8FBE5)) {
         onThemeSelected(ThemeName.CartoonMonster)
       }
-      ThemeCard(themeAppIcon(ThemeName.CartoonHero), strings["theme_hero"], currentTheme == ThemeName.CartoonHero, Color(0xFFFFE9EE)) {
+      ThemeCard(themeAppIcon(ThemeName.CartoonHero), strings["theme_hero"], currentTheme == ThemeName.CartoonHero, Color(0xFFE2ECFF)) {
         onThemeSelected(ThemeName.CartoonHero)
       }
-      ThemeCard(themeAppIcon(ThemeName.CartoonSea), strings["theme_sea"], currentTheme == ThemeName.CartoonSea, Color(0xFFE6F6FF)) {
+      ThemeCard(themeAppIcon(ThemeName.CartoonSea), strings["theme_sea"], currentTheme == ThemeName.CartoonSea, Color(0xFFD7F4FE)) {
         onThemeSelected(ThemeName.CartoonSea)
       }
-      ThemeCard(themeAppIcon(ThemeName.CartoonPlant), strings["theme_plant"], currentTheme == ThemeName.CartoonPlant, Color(0xFFEFFFE5)) {
+      ThemeCard(themeAppIcon(ThemeName.CartoonPlant), strings["theme_plant"], currentTheme == ThemeName.CartoonPlant, Color(0xFFE0FBDC)) {
         onThemeSelected(ThemeName.CartoonPlant)
       }
-      ThemeCard(themeAppIcon(ThemeName.CartoonPinky), strings["theme_pinky"], currentTheme == ThemeName.CartoonPinky, Color(0xFFFFE6F2)) {
+      ThemeCard(themeAppIcon(ThemeName.CartoonPinky), strings["theme_pinky"], currentTheme == ThemeName.CartoonPinky, Color(0xFFFFE0EE)) {
         onThemeSelected(ThemeName.CartoonPinky)
       }
-      ThemeCard(themeAppIcon(ThemeName.CartoonColorful), strings["theme_colorful"], currentTheme == ThemeName.CartoonColorful, Color(0xFFEEF3FF)) {
+      ThemeCard(themeAppIcon(ThemeName.CartoonColorful), strings["theme_colorful"], currentTheme == ThemeName.CartoonColorful, Color(0xFFEEE7FE)) {
         onThemeSelected(ThemeName.CartoonColorful)
       }
     }

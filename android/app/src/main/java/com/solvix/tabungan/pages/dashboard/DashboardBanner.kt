@@ -165,6 +165,7 @@ fun DashboardBanner(
             // Formal Privacy Eye Toggle (placed right beside the number)
             Box(
               modifier = Modifier
+                .size(44.dp)
                 .clip(CircleShape)
                 .background(colors.card.copy(alpha = 0.7f))
                 .clickable {

@@ -94,7 +94,7 @@ fun RecurringItemCard(
       )
       IconButton(
         onClick = onDelete,
-        modifier = Modifier.size(28.dp),
+        modifier = Modifier.size(44.dp),
       ) {
         Icon(
           imageVector = Icons.Rounded.Delete,

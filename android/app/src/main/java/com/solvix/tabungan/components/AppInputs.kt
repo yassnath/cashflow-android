@@ -20,6 +20,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
@@ -72,12 +73,13 @@ fun AppTextField(
   var showPassword by remember { mutableStateOf(false) }
   val trailingIcon = trailing ?: if (isPassword) {
     {
-      Icon(
-        imageVector = if (showPassword) Icons.Filled.VisibilityOff else Icons.Filled.Visibility,
-        contentDescription = if (showPassword) "Hide password" else "Show password",
-        tint = colors.muted,
-        modifier = Modifier.clickable { showPassword = !showPassword },
-      )
+      IconButton(onClick = { showPassword = !showPassword }) {
+        Icon(
+          imageVector = if (showPassword) Icons.Filled.VisibilityOff else Icons.Filled.Visibility,
+          contentDescription = if (showPassword) "Hide password" else "Show password",
+          tint = colors.muted,
+        )
+      }
     }
   } else {
     null
@@ -237,7 +239,7 @@ fun AppDropdown(
             Box(
               modifier = Modifier
                 .fillMaxWidth()
-                .height(34.dp)
+                .heightIn(min = 44.dp)
                 .clip(itemShape)
                 .background(itemBackground)
                 .clickable {
@@ -249,7 +251,7 @@ fun AppDropdown(
             ) {
               Text(
                 text = option,
-                color = if (isSelected) Color.White else colors.text,
+                color = if (isSelected) colors.onGradient else colors.text,
                 fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Medium,
                 fontSize = 12.sp,
                 maxLines = 1,

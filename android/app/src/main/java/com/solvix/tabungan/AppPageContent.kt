@@ -38,6 +38,7 @@ fun AppPageContent(
   chatMessages: androidx.compose.runtime.snapshots.SnapshotStateList<ChatMessage>,
   // â”€â”€ UI State â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   summaryRange: SummaryRange,
+  onSummaryRangeChange: (SummaryRange) -> Unit,
   insightsTimeframe: InsightTimeframe,
   insightsRefreshing: Boolean,
   aiReplyLoading: Boolean,
@@ -87,7 +88,7 @@ fun AppPageContent(
     val expenseTotal = filtered.filter { it.type == EntryType.Expense }.sumOf { it.amount }
     HeroSummary(
       range = summaryRange,
-      onRangeChange = { /* parent controls summaryRange */ },
+      onRangeChange = onSummaryRangeChange,
       incomeTotal = incomeTotal,
       expenseTotal = expenseTotal,
       strings = strings,

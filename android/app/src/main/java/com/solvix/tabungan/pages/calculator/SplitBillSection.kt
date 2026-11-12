@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -160,13 +161,14 @@ fun SplitBillSection(
                 .background(if (isSelected) colors.accent else colors.bg2)
                 .border(1.dp, if (isSelected) colors.accent else colors.cardBorder, RoundedCornerShape(16.dp))
                 .clickable { taxPercent = pct }
+                .heightIn(min = 44.dp)
                 .padding(horizontal = 12.dp, vertical = 6.dp),
             ) {
               Text(
                 text = "${pct.toInt()}%",
                 fontSize = 11.sp,
                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                color = if (isSelected) Color.White else colors.text,
+                color = if (isSelected) colors.onGradient else colors.text,
               )
             }
           }
@@ -199,7 +201,7 @@ fun SplitBillSection(
         ) {
           Box(
             modifier = Modifier
-              .size(34.dp)
+            .size(44.dp)
               .clip(CircleShape)
               .background(colors.bg2)
               .border(1.dp, colors.cardBorder, CircleShape)
@@ -220,7 +222,7 @@ fun SplitBillSection(
 
           Box(
             modifier = Modifier
-              .size(34.dp)
+            .size(44.dp)
               .clip(CircleShape)
               .background(colors.accent.copy(alpha = 0.15f))
               .clickable { if (peopleCount < 50) peopleCount++ },

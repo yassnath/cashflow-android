@@ -39,6 +39,7 @@ fun AppShellLayout(
   currentLang: AppLanguage,
   currentPage: Page,
   summaryRange: SummaryRange,
+  onSummaryRangeChange: (SummaryRange) -> Unit,
   insightsTimeframe: InsightTimeframe,
   insightsRefreshing: Boolean,
   aiReplyLoading: Boolean,
@@ -159,6 +160,7 @@ fun AppShellLayout(
               BottomNav(
                 current = currentPage,
                 onSelect = { page -> onNavigateTo(page) },
+                onMoreClick = { onShowProfileMenuChange(true) },
                 strings = strings,
                 theme = currentTheme,
                 modifier = Modifier.then(if (navBlur) Modifier.blur(24.dp) else Modifier),
@@ -240,6 +242,7 @@ fun AppShellLayout(
                   cachedInsights = cachedInsights,
                   chatMessages = chatMessages,
                   summaryRange = summaryRange,
+                  onSummaryRangeChange = onSummaryRangeChange,
                   insightsTimeframe = insightsTimeframe,
                   insightsRefreshing = insightsRefreshing,
                   aiReplyLoading = aiReplyLoading,
@@ -291,7 +294,7 @@ fun AppShellLayout(
           Box(
             modifier = Modifier
               .matchParentSize()
-              .background(Color.White),
+              .background(colors.bg),
           )
         }
       }

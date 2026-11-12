@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
@@ -112,7 +113,7 @@ fun BackupSettingsCard(
       Box(
         modifier = Modifier
           .weight(1f)
-          .height(42.dp)
+          .heightIn(min = 44.dp)
           .clip(RoundedCornerShape(10.dp))
           .background(Brush.linearGradient(listOf(colors.accent, colors.accent2)))
           .clickable { onExportBackup() },
@@ -120,7 +121,7 @@ fun BackupSettingsCard(
       ) {
         Text(
           text = "📤 " + strings["backup_create_btn"].ifBlank { "Cadangkan" },
-          color = Color.White,
+          color = colors.onGradient,
           fontWeight = FontWeight.Bold,
           fontSize = 13.sp,
         )
@@ -130,7 +131,7 @@ fun BackupSettingsCard(
       Box(
         modifier = Modifier
           .weight(1f)
-          .height(42.dp)
+          .heightIn(min = 44.dp)
           .clip(RoundedCornerShape(10.dp))
           .background(colors.card)
           .border(1.dp, colors.accent.copy(alpha = 0.5f), RoundedCornerShape(10.dp))

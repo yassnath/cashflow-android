@@ -42,146 +42,168 @@ data class AppColors(
   val accent: Color,
   val accent2: Color,
   val danger: Color,
+  val onGradient: Color,
+  val onDanger: Color,
 )
 
 private val StandardLightPalette = AppColors(
-  bg = Color(0xFFF4F7FF),
-  bg2 = Color(0xFFEAF2FF),
-  text = Color(0xFF1C2141),
-  muted = Color(0xFF6F7AA5),
-  placeholder = Color(0xFF9AA3B4),
+  bg = Color(0xFFF8FAFD),
+  bg2 = Color(0xFFEEF4FF),
+  text = Color(0xFF0F172A),
+  muted = Color(0xFF475569),
+  placeholder = Color(0xFF94A3B8),
   card = Color(0xFFFFFFFF),
-  cardBorder = Color(0x1F111827),
-  fieldBorder = Color(0x1F111827),
-  accent = Color(0xFFFF9F1C),
-  accent2 = Color(0xFF2EC4B6),
-  danger = Color(0xFFFF4D6D),
+  cardBorder = Color(0xFFE2E8F0),
+  fieldBorder = Color(0xFFCBD5E1),
+  accent = Color(0xFF2563EB), // Electric Royal Blue
+  accent2 = Color(0xFF06B6D4), // Vivid Electric Cyan
+  danger = Color(0xFFF43F5E), // Vivid Rose Red
+  onGradient = Color.White,
+  onDanger = Color.White,
 )
 
 private val StandardDarkPalette = AppColors(
-  bg = Color(0xFF0F1220),
-  bg2 = Color(0xFF1B2034),
-  text = Color(0xFFFFFFFF),
-  muted = Color(0xCCFFFFFF),
-  placeholder = Color(0x99FFFFFF),
-  card = Color(0xFF14182C),
-  cardBorder = Color(0x14FFFFFF),
-  fieldBorder = Color(0x59FFFFFF),
-  accent = Color(0xFF7F5AF0),
-  accent2 = Color(0xFF2CB67D),
-  danger = Color(0xFFFF5470),
+  bg = Color(0xFF0A0E1A), // Deep luminous cyber navy
+  bg2 = Color(0xFF141C30),
+  text = Color(0xFFF8FAFC),
+  muted = Color(0xFF94A3B8),
+  placeholder = Color(0xFF64748B),
+  card = Color(0xFF101728),
+  cardBorder = Color(0xFF1E293B),
+  fieldBorder = Color(0xFF334155),
+  accent = Color(0xFF6366F1), // Vivid Electric Indigo
+  accent2 = Color(0xFF00E5FF), // Luminous Cyber Neon Cyan
+  danger = Color(0xFFFF3366),
+  onGradient = Color.White,
+  onDanger = Color.White,
 )
 
 private val CartoonFoodPalette = AppColors(
-  bg = Color(0xFFFFF4E6),
-  bg2 = Color(0xFFFFE9CC),
-  text = Color(0xFF4A2F1C),
-  muted = Color(0xFF9C6A42),
-  placeholder = Color(0xFF9AA3B4),
-  card = Color(0xFFFFFAF3),
-  cardBorder = Color(0x1F111827),
-  fieldBorder = Color(0x1F111827),
-  accent = Color(0xFFFF7A00),
-  accent2 = Color(0xFFFFB703),
-  danger = Color(0xFFFF4D6D),
+  bg = Color(0xFFFFF9F2), // Warm, bright, sunny cream
+  bg2 = Color(0xFFFFEEDB), // Fresh juicy peach tint
+  text = Color(0xFF2D1808), // Rich deep espresso
+  muted = Color(0xFF7C5035),
+  placeholder = Color(0xFFA8826D),
+  card = Color(0xFFFFFFFF),
+  cardBorder = Color(0xFFFFDFC4),
+  fieldBorder = Color(0xFFFFCE9F),
+  accent = Color(0xFFFF6D00), // Juicy Neon Tangerine
+  accent2 = Color(0xFFFF2A6D), // Fresh Strawberry Coral
+  danger = Color(0xFFE11D48),
+  onGradient = Color.White,
+  onDanger = Color.White,
 )
 
 private val CartoonSpacePalette = AppColors(
-  bg = Color(0xFF101236),
-  bg2 = Color(0xFF1A1F4D),
+  bg = Color(0xFF0C0E24), // Deep galactic space
+  bg2 = Color(0xFF171B42),
   text = Color(0xFFFFFFFF),
-  muted = Color(0xCCFFFFFF),
-  placeholder = Color(0x99FFFFFF),
-  card = Color(0xFF171C44),
-  cardBorder = Color(0x1AFFFFFF),
-  fieldBorder = Color(0x4DFFFFFF),
-  accent = Color(0xFF9D4EDD),
-  accent2 = Color(0xFF5FA8D3),
-  danger = Color(0xFFFF5470),
+  muted = Color(0xFFA5B4FC), // Luminous soft lavender
+  placeholder = Color(0xFF818CF8),
+  card = Color(0xFF13173A),
+  cardBorder = Color(0x38A855F7), // Luminous purple nebula glow
+  fieldBorder = Color(0x52818CF8),
+  accent = Color(0xFFA855F7), // Vivid Cosmic Ultraviolet
+  accent2 = Color(0xFF00F0FF), // Electric Neon Cyan
+  danger = Color(0xFFFF2A6D),
+  onGradient = Color.White,
+  onDanger = Color.White,
 )
 
 private val CartoonMonsterPalette = AppColors(
-  bg = Color(0xFFF0FFF4),
-  bg2 = Color(0xFFD6FFE5),
-  text = Color(0xFF134D35),
-  muted = Color(0xFF4C8B6A),
-  placeholder = Color(0xFF9AA3B4),
-  card = Color(0xFFF8FFFB),
-  cardBorder = Color(0x1F111827),
-  fieldBorder = Color(0x1F111827),
-  accent = Color(0xFF2EC4B6),
-  accent2 = Color(0xFF8AC926),
-  danger = Color(0xFFFF4D6D),
+  bg = Color(0xFFF2FDF5), // Bright, lively electric mint cream
+  bg2 = Color(0xFFD8FBE5), // Vibrant lime-mint tint
+  text = Color(0xFF064E3B), // Deep rich emerald
+  muted = Color(0xFF059669),
+  placeholder = Color(0xFF6EE7B7),
+  card = Color(0xFFFFFFFF),
+  cardBorder = Color(0xFFBBF7D0),
+  fieldBorder = Color(0xFF86EFAC),
+  accent = Color(0xFF10B981), // Electric Emerald Green
+  accent2 = Color(0xFF84CC16), // Neon Slime Lime
+  danger = Color(0xFFF43F5E),
+  onGradient = Color.White,
+  onDanger = Color.White,
 )
 
 private val CartoonHeroPalette = AppColors(
-  bg = Color(0xFFEAF2FF),
-  bg2 = Color(0xFFD6E6FF),
-  text = Color(0xFF14214B),
-  muted = Color(0xFF4F6DB3),
-  placeholder = Color(0xFF9AA3B4),
-  card = Color(0xFFF6F9FF),
-  cardBorder = Color(0x1F111827),
-  fieldBorder = Color(0x1F111827),
-  accent = Color(0xFFFF595E),
-  accent2 = Color(0xFF1982C4),
-  danger = Color(0xFFFF4D6D),
+  bg = Color(0xFFF5F8FF), // Bright heroic energetic comic white
+  bg2 = Color(0xFFE2ECFF), // Dynamic comic blue tint
+  text = Color(0xFF0A184A), // Deep heroic navy
+  muted = Color(0xFF2563EB),
+  placeholder = Color(0xFF93C5FD),
+  card = Color(0xFFFFFFFF),
+  cardBorder = Color(0xFFBFDBFE),
+  fieldBorder = Color(0xFF93C5FD),
+  accent = Color(0xFF1D4ED8), // Electric Superhero Cobalt
+  accent2 = Color(0xFFEF4444), // Crimson Superhero Scarlet
+  danger = Color(0xFFDC2626),
+  onGradient = Color.White,
+  onDanger = Color.White,
 )
 
 private val CartoonSeaPalette = AppColors(
-  bg = Color(0xFFE8F8FF),
-  bg2 = Color(0xFFD4EFFF),
-  text = Color(0xFF173A4F),
-  muted = Color(0xFF4C7A96),
-  placeholder = Color(0xFF9AA3B4),
-  card = Color(0xFFF6FBFF),
-  cardBorder = Color(0x1F111827),
-  fieldBorder = Color(0x1F111827),
-  accent = Color(0xFF2EC4B6),
-  accent2 = Color(0xFF4DABF7),
-  danger = Color(0xFFFF4D6D),
+  bg = Color(0xFFF0FBFF), // Sunlit lagoon radiant turquoise water
+  bg2 = Color(0xFFD7F4FE), // Bright clear coral sea blue
+  text = Color(0xFF082F49), // Deep ocean abyss
+  muted = Color(0xFF0284C7),
+  placeholder = Color(0xFF7DD3FC),
+  card = Color(0xFFFFFFFF),
+  cardBorder = Color(0xFFBAE6FD),
+  fieldBorder = Color(0xFF7DD3FC),
+  accent = Color(0xFF0284C7), // Vivid Azure Ocean Blue
+  accent2 = Color(0xFF06B6D4), // Tropical Neon Turquoise
+  danger = Color(0xFFF43F5E),
+  onGradient = Color.White,
+  onDanger = Color.White,
 )
 
 private val CartoonPlantPalette = AppColors(
-  bg = Color(0xFFF5FFF0),
-  bg2 = Color(0xFFE0FFD4),
-  text = Color(0xFF234D20),
-  muted = Color(0xFF5C8A51),
-  placeholder = Color(0xFF9AA3B4),
-  card = Color(0xFFFBFFF8),
-  cardBorder = Color(0x1F111827),
-  fieldBorder = Color(0x1F111827),
-  accent = Color(0xFF80B918),
-  accent2 = Color(0xFF2D6A4F),
-  danger = Color(0xFFFF4D6D),
+  bg = Color(0xFFF4FDF3), // Sunny greenhouse bright leaf white
+  bg2 = Color(0xFFE0FBDC), // Fresh sprout green
+  text = Color(0xFF143812), // Deep lush botanical evergreen
+  muted = Color(0xFF16A34A),
+  placeholder = Color(0xFF86EFAC),
+  card = Color(0xFFFFFFFF),
+  cardBorder = Color(0xFFC7F5BD),
+  fieldBorder = Color(0xFFA3E694),
+  accent = Color(0xFF16A34A), // Vibrant Spring Garden Green
+  accent2 = Color(0xFF22C55E), // Lush Radiant Emerald
+  danger = Color(0xFFE11D48),
+  onGradient = Color.White,
+  onDanger = Color.White,
 )
 
 private val CartoonPinkyPalette = AppColors(
-  bg = Color(0xFFFFF0F6),
-  bg2 = Color(0xFFFFD6E8),
-  text = Color(0xFF5B1B3C),
-  muted = Color(0xFFB85A83),
-  placeholder = Color(0xFF9AA3B4),
-  card = Color(0xFFFFF7FB),
-  cardBorder = Color(0x1F111827),
-  fieldBorder = Color(0x1F111827),
-  accent = Color(0xFFFF4D6D),
-  accent2 = Color(0xFFFF85A1),
-  danger = Color(0xFFFF4D6D),
+  bg = Color(0xFFFFF5FA), // Luminous bright sakura blossom white
+  bg2 = Color(0xFFFFE0EE), // Sweet bubblegum pink
+  text = Color(0xFF4A0E2E), // Rich deep berry
+  muted = Color(0xFFDB2777), // Vivid magenta pink
+  placeholder = Color(0xFFF472B6),
+  card = Color(0xFFFFFFFF),
+  cardBorder = Color(0xFFFFC5DF),
+  fieldBorder = Color(0xFFF9A8D4),
+  accent = Color(0xFFF43F5E), // Vivid Rose Berry / Neon Pink
+  accent2 = Color(0xFFEC4899), // Bright Sweet Bubblegum
+  danger = Color(0xFFBE123C),
+  onGradient = Color.White,
+  onDanger = Color.White,
 )
 
 private val CartoonColorfulPalette = AppColors(
-  bg = Color(0xFFF0F7FF),
-  bg2 = Color(0xFFE0ECFF),
-  text = Color(0xFF2A2F5B),
-  muted = Color(0xFF6F78B8),
-  placeholder = Color(0xFF9AA3B4),
-  card = Color(0xFFFEFCFF),
-  cardBorder = Color(0x1F111827),
-  fieldBorder = Color(0x1F111827),
-  accent = Color(0xFFFF6B6B),
-  accent2 = Color(0xFF4DABF7),
-  danger = Color(0xFFFF4D6D),
+  bg = Color(0xFFF8F5FF), // Luminous bright violet-white with joyful energy
+  bg2 = Color(0xFFEEE7FE), // Bright cheerful lavender
+  text = Color(0xFF1E1B4B), // Deep cosmic indigo
+  muted = Color(0xFF6366F1), // Electric indigo
+  placeholder = Color(0xFFA5B4FC),
+  card = Color(0xFFFFFFFF),
+  cardBorder = Color(0xFFDDD6FE),
+  fieldBorder = Color(0xFFC4B5FD),
+  accent = Color(0xFF7C3AED), // Vivid Electric Ultraviolet
+  accent2 = Color(0xFFFF5722), // Radiant Sunset Neon Orange
+  danger = Color(0xFFF43F5E),
+  onGradient = Color.White,
+  onDanger = Color.White,
 )
 
 private val ThemePalettes = mapOf(
@@ -248,10 +270,10 @@ private fun colorSchemeFor(theme: ThemeName, palette: AppColors): ColorScheme {
     error = palette.danger,
     background = palette.bg,
     surface = palette.card,
-    onPrimary = Color.White,
-    onSecondary = Color.White,
+    onPrimary = palette.onGradient,
+    onSecondary = palette.onGradient,
     onBackground = palette.text,
     onSurface = palette.text,
-    onError = Color.White,
+    onError = palette.onDanger,
   )
 }

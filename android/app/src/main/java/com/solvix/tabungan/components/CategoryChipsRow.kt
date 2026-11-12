@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -46,6 +47,7 @@ fun CategoryChipsRow(
         .background(colors.accent.copy(alpha = 0.12f))
         .border(1.dp, colors.accent.copy(alpha = 0.4f), RoundedCornerShape(999.dp))
         .clickable(onClick = onAddCategoryClick)
+        .heightIn(min = 44.dp)
         .padding(horizontal = 10.dp, vertical = 5.dp),
       contentAlignment = Alignment.Center,
     ) {
@@ -64,6 +66,7 @@ fun CategoryChipsRow(
           .clip(RoundedCornerShape(999.dp))
           .background(if (isSelected) colors.accent else colors.bg2)
           .clickable { onSelectCategory(cat) }
+          .heightIn(min = 44.dp)
           .padding(horizontal = 10.dp, vertical = 5.dp),
         contentAlignment = Alignment.Center,
       ) {
@@ -71,7 +74,7 @@ fun CategoryChipsRow(
           text = cat,
           fontSize = 11.sp,
           fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-          color = if (isSelected) Color.White else colors.text,
+          color = if (isSelected) colors.onGradient else colors.text,
         )
       }
     }

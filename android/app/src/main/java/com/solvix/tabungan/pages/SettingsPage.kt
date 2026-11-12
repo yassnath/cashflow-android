@@ -238,7 +238,7 @@ fun SettingsPage(
             Box(
               modifier = Modifier
                 .weight(1f)
-                .height(34.dp)
+                .heightIn(min = 44.dp)
                 .clip(RoundedCornerShape(8.dp))
                 .background(if (isSelected) colors.accent else colors.bg2)
                 .clickable {
@@ -251,7 +251,7 @@ fun SettingsPage(
                 text = label,
                 fontSize = 11.sp,
                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                color = if (isSelected) Color.White else colors.text,
+                color = if (isSelected) colors.onGradient else colors.text,
               )
             }
           }
@@ -425,7 +425,7 @@ fun SettingsPage(
         Box(
           modifier = Modifier
             .fillMaxWidth()
-            .heightIn(min = 42.dp)
+            .heightIn(min = 44.dp)
             .clip(RoundedCornerShape(12.dp))
             .background(colors.danger.copy(alpha = 0.12f))
             .border(1.dp, colors.danger.copy(alpha = 0.35f), RoundedCornerShape(12.dp))
@@ -460,13 +460,13 @@ fun SettingsPage(
         Box(
           modifier = Modifier
             .fillMaxWidth()
-            .heightIn(min = 42.dp)
+            .heightIn(min = 44.dp)
             .clip(RoundedCornerShape(12.dp))
             .background(if (canDeleteAccount) deleteButtonRed else colors.muted.copy(alpha = 0.35f))
             .clickable(enabled = canDeleteAccount, onClick = onDeleteAccount),
           contentAlignment = Alignment.Center,
         ) {
-          Text(text = strings["delete_account_action"], color = Color.White, fontWeight = FontWeight.Bold)
+          Text(text = strings["delete_account_action"], color = colors.onDanger, fontWeight = FontWeight.Bold)
         }
       }
     }
