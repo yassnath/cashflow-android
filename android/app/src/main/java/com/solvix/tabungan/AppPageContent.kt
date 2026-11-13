@@ -121,7 +121,7 @@ fun AppPageContent(
         onUpdateGoalMilestones()
         persistLocalCache()
         HapticHelper.vibrateSuccess(context)
-        onAlert(strings["income_save_success"].ifBlank { "Pemasukan berhasil disimpan! ✅" })
+        onToast(strings["income_save_success"].ifBlank { "Pemasukan berhasil disimpan! ✅" })
         if (activeUserId.isNotBlank()) {
           scope.launch(Dispatchers.IO) {
             var toSync = entry
@@ -148,7 +148,7 @@ fun AppPageContent(
         onUpdateGoalMilestones()
         persistLocalCache()
         HapticHelper.vibrateSuccess(context)
-        onAlert(strings["income_update_success"].ifBlank { "Pemasukan berhasil diperbarui! ✅" })
+        onToast(strings["income_update_success"].ifBlank { "Pemasukan berhasil diperbarui! ✅" })
         if (activeUserId.isNotBlank()) {
           scope.launch(Dispatchers.IO) {
             var toSync = entry
@@ -180,7 +180,7 @@ fun AppPageContent(
         onUpdateGoalMilestones()
         persistLocalCache()
         HapticHelper.vibrateSuccess(context)
-        onAlert(strings["expense_save_success"].ifBlank { "Pengeluaran berhasil disimpan! ✅" })
+        onToast(strings["expense_save_success"].ifBlank { "Pengeluaran berhasil disimpan! ✅" })
         if (activeUserId.isNotBlank()) {
           scope.launch(Dispatchers.IO) {
             var toSync = entry
@@ -207,7 +207,7 @@ fun AppPageContent(
         onUpdateGoalMilestones()
         persistLocalCache()
         HapticHelper.vibrateSuccess(context)
-        onAlert(strings["expense_update_success"].ifBlank { "Pengeluaran berhasil diperbarui! ✅" })
+        onToast(strings["expense_update_success"].ifBlank { "Pengeluaran berhasil diperbarui! ✅" })
         if (activeUserId.isNotBlank()) {
           scope.launch(Dispatchers.IO) {
             var toSync = entry
@@ -256,7 +256,7 @@ fun AppPageContent(
         transferEntries.add(entry)
         persistLocalCache()
         HapticHelper.vibrateSuccess(context)
-        onAlert(strings["transfer_save_success"].ifBlank { "Transfer dana berhasil disimpan! ✅" })
+        onToast(strings["transfer_save_success"].ifBlank { "Transfer dana berhasil disimpan! ✅" })
         if (activeUserId.isNotBlank()) {
           scope.launch(Dispatchers.IO) {
             SyncQueueManager.enqueueInsertMoney(context, activeUserId, entry)
@@ -269,7 +269,7 @@ fun AppPageContent(
         if (i >= 0) transferEntries[i] = entry
         persistLocalCache()
         HapticHelper.vibrateSuccess(context)
-        onAlert(strings["transfer_update_success"].ifBlank { "Transfer dana berhasil diperbarui! ✅" })
+        onToast(strings["transfer_update_success"].ifBlank { "Transfer dana berhasil diperbarui! ✅" })
         if (activeUserId.isNotBlank()) {
           scope.launch(Dispatchers.IO) {
             SyncQueueManager.enqueueUpdateMoney(context, activeUserId, entry)
@@ -287,13 +287,13 @@ fun AppPageContent(
       incomeTotal = incomeEntries.sumOf { it.amount },
       expenseTotal = expenseEntries.sumOf { it.amount },
       balanceTotal = incomeEntries.sumOf { it.amount } - expenseEntries.sumOf { it.amount },
-      onInvalid = { onAlert(strings["goal_missing"]) },
+      onInvalid = { onToast(strings["goal_missing"]) },
       onSave = { entry ->
         dreamEntries.add(entry)
         onUpdateGoalMilestones()
         persistLocalCache()
         HapticHelper.vibrateSuccess(context)
-        onAlert(strings["dream_save_success"].ifBlank { "Target impian berhasil disimpan! ✅" })
+        onToast(strings["dream_save_success"].ifBlank { "Target impian berhasil disimpan! ✅" })
         if (activeUserId.isNotBlank()) {
           scope.launch(Dispatchers.IO) {
             SupabaseRepository.insertDreamEntry(activeUserId, entry)
@@ -307,7 +307,7 @@ fun AppPageContent(
         onUpdateGoalMilestones()
         persistLocalCache()
         HapticHelper.vibrateSuccess(context)
-        onAlert(strings["dream_update_success"].ifBlank { "Target impian berhasil diperbarui! ✅" })
+        onToast(strings["dream_update_success"].ifBlank { "Target impian berhasil diperbarui! ✅" })
         if (activeUserId.isNotBlank()) {
           scope.launch(Dispatchers.IO) {
             SupabaseRepository.updateDreamEntry(entry)
@@ -467,12 +467,12 @@ fun AppPageContent(
 
     Page.Loans -> LoanTrackingPage(
       entries = loanEntries,
-      onInvalid = { onAlert(strings["loan_missing"]) },
+      onInvalid = { onToast(strings["loan_missing"]) },
       onSave = { entry ->
         loanEntries.add(entry)
         onPersistLoanEntries(activeUserId)
         HapticHelper.vibrateSuccess(context)
-        onAlert(strings["loan_save_success"].ifBlank { "Catatan hutang/piutang berhasil disimpan! ✅" })
+        onToast(strings["loan_save_success"].ifBlank { "Catatan hutang/piutang berhasil disimpan! ✅" })
         if (activeUserId.isNotBlank()) {
           scope.launch(Dispatchers.IO) {
             SupabaseRepository.insertLoanEntry(activeUserId, entry)
@@ -486,7 +486,7 @@ fun AppPageContent(
           loanEntries[i] = entry
           onPersistLoanEntries(activeUserId)
           HapticHelper.vibrateSuccess(context)
-          onAlert(strings["loan_update_success"].ifBlank { "Catatan hutang/piutang berhasil diperbarui! ✅" })
+          onToast(strings["loan_update_success"].ifBlank { "Catatan hutang/piutang berhasil diperbarui! ✅" })
           if (activeUserId.isNotBlank()) {
             scope.launch(Dispatchers.IO) {
               SupabaseRepository.updateLoanEntry(entry)
@@ -530,7 +530,7 @@ fun AppPageContent(
             Log.e("AIChat", "Request failed", e)
             withContext(Dispatchers.Main) {
               onAiReplyLoadingChange(false)
-              onAlert(
+              onToast(
                 if (BuildConfig.CEREBRAS_API_KEY.isBlank()) strings["ai_not_configured"]
                 else strings["ai_request_failed"],
               )

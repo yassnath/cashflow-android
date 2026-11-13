@@ -57,7 +57,9 @@ import com.solvix.tabungan.InitialBalanceManager
 import com.solvix.tabungan.LocalAppColors
 import com.solvix.tabungan.LocalStrings
 import com.solvix.tabungan.components.AccountAutoResearchPreview
+import com.solvix.tabungan.components.AppConfirmationDialog
 import com.solvix.tabungan.formatRupiah
+import android.widget.Toast
 
 @Composable
 fun InitialBalanceModal(
@@ -91,6 +93,7 @@ fun InitialBalanceModal(
   var isEditingCustom by remember { mutableStateOf(false) }
   var customAccountName by remember { mutableStateOf("") }
   var editingTargetAccount by remember { mutableStateOf<String?>(null) }
+  var accountToDelete by remember { mutableStateOf<String?>(null) }
 
   val title = strings["initial_balance_title"].ifBlank { "Pengaturan Saldo Awal" }
   val subtitle = strings["initial_balance_subtitle"].ifBlank {
@@ -428,6 +431,7 @@ fun InitialBalanceModal(
                     customAccountName = ""
                     isEditingCustom = false
                   }
+                  Toast.makeText(context, "Saldo awal berhasil disimpan!", Toast.LENGTH_SHORT).show()
                   onBalancesChanged()
                 },
               )
@@ -489,12 +493,7 @@ fun InitialBalanceModal(
                     amountInput = bal.toString()
                   },
                   onDelete = {
-                    InitialBalanceManager.removeInitialBalance(context, accName, userId = userId)
-                    if (editingTargetAccount == accName) {
-                      editingTargetAccount = null
-                      amountInput = ""
-                    }
-                    onBalancesChanged()
+                    accountToDelete = accName
                   },
                 )
               }
@@ -511,5 +510,27 @@ fun InitialBalanceModal(
         }
       }
     }
+  }
+
+  // Dialog Validasi Hapus Saldo Awal (di Tengah Layar)
+  accountToDelete?.let { targetAcc ->
+    AppConfirmationDialog(
+      title = "Hapus Saldo Awal?",
+      message = "Apakah Anda yakin ingin menghapus saldo awal untuk rekening $targetAcc?",
+      confirmText = "Hapus",
+      cancelText = "Batal",
+      isDestructive = true,
+      onConfirm = {
+        InitialBalanceManager.removeInitialBalance(context, targetAcc, userId = userId)
+        if (editingTargetAccount == targetAcc) {
+          editingTargetAccount = null
+          amountInput = ""
+        }
+        accountToDelete = null
+        Toast.makeText(context, "Saldo awal berhasil dihapus!", Toast.LENGTH_SHORT).show()
+        onBalancesChanged()
+      },
+      onDismiss = { accountToDelete = null },
+    )
   }
 }

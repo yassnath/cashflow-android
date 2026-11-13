@@ -9,17 +9,22 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.AccountBalanceWallet
+import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.KeyboardArrowDown
 import androidx.compose.material.icons.rounded.Person
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -33,10 +38,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.font.FontWeight
-import kotlinx.coroutines.launch
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.dp
@@ -58,9 +61,7 @@ fun TopBar(
   isAdmin: Boolean,
 ) {
   val colors = LocalAppColors.current
-  val context = LocalContext.current
-  val scope = rememberCoroutineScope()
-  val configuration = androidx.compose.ui.platform.LocalConfiguration.current
+  val configuration = LocalConfiguration.current
   val isSmallScreen = configuration.screenWidthDp < 360
   var menuAnchorBounds by remember { mutableStateOf(IntRect.Zero) }
   val isDark = isDarkTheme(theme)
@@ -118,22 +119,10 @@ fun TopBar(
       }
     }
 
-    Row(
-      verticalAlignment = Alignment.CenterVertically,
-      horizontalArrangement = Arrangement.spacedBy(6.dp),
-    ) {
-      SyncStatusPill(
-        onRetryClick = {
-          scope.launch(kotlinx.coroutines.Dispatchers.IO) {
-            SyncQueueManager.processQueue(context)
-          }
-        },
-      )
-
-      Box {
-        Row(
-          modifier = Modifier
-            .clip(RoundedCornerShape(999.dp))
+    Box {
+      Row(
+        modifier = Modifier
+          .clip(RoundedCornerShape(999.dp))
           .background(colors.accent.copy(alpha = 0.12f))
           .border(1.dp, colors.accent.copy(alpha = 0.45f), RoundedCornerShape(999.dp))
           .clickable(onClick = onProfileClick)
@@ -149,7 +138,7 @@ fun TopBar(
             )
           },
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
       ) {
         if (theme == ThemeName.StandardLight || theme == ThemeName.StandardDark) {
           Icon(
@@ -166,7 +155,7 @@ fun TopBar(
           color = colors.text,
           maxLines = 1,
           overflow = TextOverflow.Ellipsis,
-          modifier = Modifier.widthIn(max = 85.dp),
+          modifier = Modifier.widthIn(max = 95.dp),
         )
         Icon(
           imageVector = Icons.Rounded.KeyboardArrowDown,
@@ -175,37 +164,89 @@ fun TopBar(
           modifier = Modifier.size(16.dp),
         )
       }
+
+      val maxMenuHeight = (configuration.screenHeightDp * 0.76f).dp
       DropDownMenuCard(
         expanded = showMenu,
         onDismiss = onDismissMenu,
-        modifier = Modifier.width(220.dp),
+        modifier = Modifier
+          .width(260.dp)
+          .heightIn(max = maxMenuHeight),
         anchorBounds = menuAnchorBounds,
         alignRight = true,
         xOffsetDp = (-2).dp,
         yOffsetDp = 10.dp,
       ) {
-        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Column(
+          modifier = Modifier
+            .fillMaxWidth()
+            .verticalScroll(rememberScrollState()),
+          verticalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+          // Profile Header
           Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+              .fillMaxWidth()
+              .padding(bottom = 4.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
           ) {
-            Column {
-              Text(text = displayName, fontWeight = FontWeight.Bold, color = colors.text)
-              Text(text = "@$displayUsername", color = colors.muted, fontSize = 12.sp)
+            Row(
+              verticalAlignment = Alignment.CenterVertically,
+              horizontalArrangement = Arrangement.spacedBy(8.dp),
+              modifier = Modifier.weight(1f, fill = false),
+            ) {
+              Box(
+                modifier = Modifier
+                  .size(34.dp)
+                  .clip(CircleShape)
+                  .background(colors.accent.copy(alpha = 0.18f)),
+                contentAlignment = Alignment.Center,
+              ) {
+                Icon(
+                  imageVector = Icons.Rounded.Person,
+                  contentDescription = null,
+                  tint = colors.accent,
+                  modifier = Modifier.size(18.dp),
+                )
+              }
+              Column {
+                Text(
+                  text = displayName.ifBlank { strings["guest"] },
+                  fontWeight = FontWeight.Bold,
+                  fontSize = 13.sp,
+                  color = colors.text,
+                  maxLines = 1,
+                  overflow = TextOverflow.Ellipsis,
+                )
+                Text(
+                  text = "@${displayUsername.ifBlank { "user" }}",
+                  color = colors.muted,
+                  fontSize = 11.sp,
+                  maxLines = 1,
+                  overflow = TextOverflow.Ellipsis,
+                )
+              }
             }
             Box(
               modifier = Modifier
-                .size(44.dp)
+                .size(32.dp)
                 .clip(CircleShape)
                 .background(colors.bg2)
-                .padding(4.dp)
                 .clickable { onDismissMenu() },
               contentAlignment = Alignment.Center,
             ) {
-              Text(text = "x", fontWeight = FontWeight.Bold, color = colors.text)
+              Icon(
+                imageVector = Icons.Rounded.Close,
+                contentDescription = strings["close"].ifBlank { "Tutup" },
+                tint = colors.muted,
+                modifier = Modifier.size(16.dp),
+              )
             }
           }
+
+          HorizontalDivider(color = colors.cardBorder, thickness = 0.8.dp)
+
           if (isAdmin) {
             MenuItem(
               text = strings["admin_logout"],
@@ -213,63 +254,110 @@ fun TopBar(
               color = colors.danger,
             ) { onLogout() }
           } else {
+            // Section: Transaksi & Target
+            Text(
+              text = "AKTIVITAS FINANSIAL",
+              fontSize = 10.sp,
+              fontWeight = FontWeight.Bold,
+              color = colors.muted,
+              letterSpacing = 0.8.sp,
+              modifier = Modifier.padding(start = 4.dp, top = 4.dp),
+            )
+
             MenuItem(
               text = "Transfer Saldo",
               icon = themePageVisualIcon(theme, Page.Transfer),
               active = currentPage == Page.Transfer,
             ) { onNavigate(Page.Transfer) }
+
             MenuItem(
-              text = strings["page_dreams"].ifBlank { "Target" },
+              text = strings["page_dreams"].ifBlank { "Target Impian" },
               icon = themePageVisualIcon(theme, Page.Dreams),
               active = currentPage == Page.Dreams,
             ) { onNavigate(Page.Dreams) }
+
             MenuItem(
-              text = strings["menu_history"],
+              text = strings["menu_history"].ifBlank { "Riwayat Transaksi" },
               icon = themePageVisualIcon(theme, Page.History),
               active = currentPage == Page.History,
             ) { onNavigate(Page.History) }
+
             MenuItem(
-              text = strings["menu_theme"],
-              icon = themePageVisualIcon(theme, Page.Themes),
-              active = currentPage == Page.Themes,
-            ) { onNavigate(Page.Themes) }
-            MenuItem(
-              text = strings["menu_insights"],
-              icon = themePageVisualIcon(theme, Page.Insights),
-              active = currentPage == Page.Insights,
-            ) { onNavigate(Page.Insights) }
-            MenuItem(
-              text = strings["menu_loans"],
+              text = strings["menu_loans"].ifBlank { "Catatan Hutang" },
               icon = themePageVisualIcon(theme, Page.Loans),
               active = currentPage == Page.Loans,
             ) { onNavigate(Page.Loans) }
+
+            HorizontalDivider(color = colors.cardBorder, thickness = 0.8.dp, modifier = Modifier.padding(vertical = 2.dp))
+
+            // Section: Fitur & Alat
+            Text(
+              text = "FITUR & ALAT",
+              fontSize = 10.sp,
+              fontWeight = FontWeight.Bold,
+              color = colors.muted,
+              letterSpacing = 0.8.sp,
+              modifier = Modifier.padding(start = 4.dp, top = 2.dp),
+            )
+
             MenuItem(
-              text = strings["menu_ai_chat"],
+              text = strings["menu_ai_chat"].ifBlank { "AI Finansial Chat" },
               icon = themePageVisualIcon(theme, Page.AIChat),
               active = currentPage == Page.AIChat,
             ) { onNavigate(Page.AIChat) }
+
             MenuItem(
-              text = strings["menu_calculator"],
+              text = strings["menu_calculator"].ifBlank { "Kalkulator Finansial" },
               icon = themePageVisualIcon(theme, Page.Calculator),
               active = currentPage == Page.Calculator,
             ) { onNavigate(Page.Calculator) }
+
             MenuItem(
-              text = strings["menu_report"],
+              text = strings["menu_insights"].ifBlank { "Analisis & Grafik" },
+              icon = themePageVisualIcon(theme, Page.Insights),
+              active = currentPage == Page.Insights,
+            ) { onNavigate(Page.Insights) }
+
+            MenuItem(
+              text = strings["menu_report"].ifBlank { "Ekspor Laporan" },
               icon = themePageVisualIcon(theme, Page.Report),
               active = currentPage == Page.Report,
             ) { onNavigate(Page.Report) }
+
+            HorizontalDivider(color = colors.cardBorder, thickness = 0.8.dp, modifier = Modifier.padding(vertical = 2.dp))
+
+            // Section: Pengaturan & Akun
+            Text(
+              text = "PENGATURAN & AKUN",
+              fontSize = 10.sp,
+              fontWeight = FontWeight.Bold,
+              color = colors.muted,
+              letterSpacing = 0.8.sp,
+              modifier = Modifier.padding(start = 4.dp, top = 2.dp),
+            )
+
             MenuItem(
-              text = strings["menu_profile"],
+              text = strings["menu_theme"].ifBlank { "Pilihan Tema" },
+              icon = themePageVisualIcon(theme, Page.Themes),
+              active = currentPage == Page.Themes,
+            ) { onNavigate(Page.Themes) }
+
+            MenuItem(
+              text = strings["menu_profile"].ifBlank { "Profil Saya" },
               icon = themePageVisualIcon(theme, Page.Profile),
               active = currentPage == Page.Profile,
             ) { onNavigate(Page.Profile) }
+
             MenuItem(
-              text = strings["menu_settings"],
+              text = strings["menu_settings"].ifBlank { "Pengaturan Sistem" },
               icon = themePageVisualIcon(theme, Page.Settings),
               active = currentPage == Page.Settings,
             ) { onNavigate(Page.Settings) }
+
+            HorizontalDivider(color = colors.cardBorder, thickness = 0.8.dp, modifier = Modifier.padding(vertical = 2.dp))
+
             MenuItem(
-              text = strings["menu_logout"],
+              text = strings["menu_logout"].ifBlank { "Keluar Akun" },
               icon = themeSectionVisualIcon(theme, "logout", "🚪"),
               color = colors.danger,
             ) { onLogout() }
@@ -278,5 +366,4 @@ fun TopBar(
       }
     }
   }
-}
 }

@@ -43,6 +43,13 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.CheckCircle
+import androidx.compose.material.icons.rounded.Info
+import androidx.compose.material3.Icon
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.PopupProperties
@@ -50,16 +57,53 @@ import androidx.compose.ui.window.PopupProperties
 @Composable
 fun ToastMessage(text: String, visible: Boolean, modifier: Modifier = Modifier) {
   val colors = LocalAppColors.current
-  AnimatedVisibility(visible = visible) {
+  val isSuccess = text.contains("berhasil", ignoreCase = true) || text.contains("sukses", ignoreCase = true)
+  AnimatedVisibility(
+    visible = visible,
+    enter = fadeIn() + slideInVertically { it / 2 },
+    exit = fadeOut() + slideOutVertically { it / 2 },
+  ) {
     Box(
       modifier = modifier
-        .clip(RoundedCornerShape(14.dp))
+        .shadow(8.dp, RoundedCornerShape(999.dp))
+        .clip(RoundedCornerShape(999.dp))
         .background(colors.card)
-        .border(1.dp, colors.cardBorder, RoundedCornerShape(14.dp))
-        .padding(horizontal = 18.dp, vertical = 12.dp),
+        .border(
+          width = 1.dp,
+          color = if (isSuccess) Color(0xFF10B981).copy(alpha = 0.5f) else colors.accent.copy(alpha = 0.45f),
+          shape = RoundedCornerShape(999.dp),
+        )
+        .padding(horizontal = 16.dp, vertical = 10.dp),
       contentAlignment = Alignment.Center,
     ) {
-      Text(text = text, fontWeight = FontWeight.Bold, color = colors.text)
+      Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+      ) {
+        Box(
+          modifier = Modifier
+            .size(24.dp)
+            .clip(CircleShape)
+            .background(
+              if (isSuccess) Color(0xFF10B981).copy(alpha = 0.18f)
+              else colors.accent.copy(alpha = 0.18f),
+            ),
+          contentAlignment = Alignment.Center,
+        ) {
+          Icon(
+            imageVector = if (isSuccess) Icons.Rounded.CheckCircle else Icons.Rounded.Info,
+            contentDescription = null,
+            tint = if (isSuccess) Color(0xFF10B981) else colors.accent,
+            modifier = Modifier.size(16.dp),
+          )
+        }
+        Text(
+          text = text,
+          fontWeight = FontWeight.SemiBold,
+          fontSize = 12.5.sp,
+          color = colors.text,
+        )
+      }
     }
   }
 }
@@ -184,9 +228,10 @@ fun DropDownMenuCard(
   ) {
     Column(
       modifier = modifier
-        .clip(RoundedCornerShape(18.dp))
-        .background(colors.card, RoundedCornerShape(18.dp))
-        .border(2.dp, colors.accent, RoundedCornerShape(18.dp))
+        .shadow(16.dp, RoundedCornerShape(20.dp))
+        .clip(RoundedCornerShape(20.dp))
+        .background(colors.card, RoundedCornerShape(20.dp))
+        .border(1.dp, colors.accent.copy(alpha = 0.40f), RoundedCornerShape(20.dp))
         .padding(12.dp),
       content = content,
     )

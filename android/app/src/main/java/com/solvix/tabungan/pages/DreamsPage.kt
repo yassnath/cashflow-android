@@ -1,12 +1,14 @@
 package com.solvix.tabungan
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -310,22 +312,31 @@ fun GoalReachedPopup(
   ) {
     Box(
       modifier = Modifier
-        .fillMaxWidth(0.90f)
-        .widthIn(max = 420.dp)
-        .padding(16.dp),
-      contentAlignment = Alignment.Center,
+        .fillMaxSize()
+        .padding(bottom = 84.dp, start = 16.dp, end = 16.dp),
+      contentAlignment = Alignment.BottomCenter,
     ) {
-      AppCard(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(22.dp),
+      Box(
+        modifier = Modifier
+          .fillMaxWidth()
+          .widthIn(max = 420.dp)
+          .clip(RoundedCornerShape(18.dp))
+          .background(colors.card)
+          .border(
+            width = 1.dp,
+            color = if (isExpenseSource) colors.danger.copy(alpha = 0.4f) else Color(0xFF10B981).copy(alpha = 0.4f),
+            shape = RoundedCornerShape(18.dp),
+          )
+          .padding(14.dp),
       ) {
-        Column(
+        Row(
           modifier = Modifier.fillMaxWidth(),
-          horizontalAlignment = Alignment.CenterHorizontally,
+          verticalAlignment = Alignment.CenterVertically,
+          horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
           Box(
             modifier = Modifier
-              .size(56.dp)
+              .size(40.dp)
               .clip(CircleShape)
               .background(if (isExpenseSource) colors.danger.copy(alpha = 0.15f) else Color(0xFF10B981).copy(alpha = 0.15f)),
             contentAlignment = Alignment.Center,
@@ -334,35 +345,40 @@ fun GoalReachedPopup(
               imageVector = if (isExpenseSource) Icons.Rounded.NotificationsActive else Icons.Rounded.EmojiEvents,
               contentDescription = null,
               tint = if (isExpenseSource) colors.danger else Color(0xFF10B981),
-              modifier = Modifier.size(30.dp),
+              modifier = Modifier.size(22.dp),
             )
           }
 
-          Spacer(modifier = Modifier.height(14.dp))
+          Column(modifier = Modifier.weight(1f)) {
+            Text(
+              text = if (isExpenseSource) "Target Batas Tercapai" else "Target Tercapai!",
+              fontWeight = FontWeight.Bold,
+              fontSize = 14.sp,
+              color = colors.text,
+            )
+            Text(
+              text = message,
+              fontSize = 12.sp,
+              color = colors.muted,
+              lineHeight = 16.sp,
+            )
+          }
 
-          Text(
-            text = if (isExpenseSource) "Target Batas Tercapai" else "Target Tercapai!",
-            fontWeight = FontWeight.Bold,
-            fontSize = 17.sp,
-            color = colors.text,
-          )
-
-          Spacer(modifier = Modifier.height(8.dp))
-
-          Text(
-            text = message,
-            fontSize = 13.sp,
-            color = colors.muted,
-            textAlign = TextAlign.Center,
-            lineHeight = 18.sp,
-          )
-
-          Spacer(modifier = Modifier.height(18.dp))
-
-          GradientButton(
-            text = "Hebat, Lanjutkan!",
-            onClick = onDismiss,
-          )
+          Box(
+            modifier = Modifier
+              .clip(RoundedCornerShape(8.dp))
+              .background(if (isExpenseSource) colors.danger else colors.accent)
+              .clickable { onDismiss() }
+              .padding(horizontal = 12.dp, vertical = 6.dp),
+            contentAlignment = Alignment.Center,
+          ) {
+            Text(
+              text = "OK",
+              color = if (isExpenseSource) colors.onDanger else colors.onGradient,
+              fontWeight = FontWeight.Bold,
+              fontSize = 12.sp,
+            )
+          }
         }
       }
     }

@@ -213,30 +213,6 @@ fun PinSecuritySettingsModal(
             modifier = Modifier.padding(horizontal = 8.dp),
           )
 
-          Spacer(modifier = Modifier.height(10.dp))
-
-          // Info Keamanan Cloud
-          Box(
-            modifier = Modifier
-              .fillMaxWidth()
-              .clip(RoundedCornerShape(12.dp))
-              .background(colors.bg2)
-              .padding(horizontal = 12.dp, vertical = 10.dp),
-          ) {
-            Row(
-              verticalAlignment = Alignment.CenterVertically,
-              horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-              Text(text = "🛡️", fontSize = 16.sp)
-              Text(
-                text = "Terenkripsi SHA-256 dengan salt unik. Disinkronkan aman ke database Supabase dan perangkat HP Anda.",
-                fontSize = 11.sp,
-                color = colors.muted,
-                lineHeight = 15.sp,
-              )
-            }
-          }
-
           Spacer(modifier = Modifier.height(20.dp))
 
           // Action Buttons
